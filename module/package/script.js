@@ -139,8 +139,7 @@ async function printPackingList(package_id) {
     });
 
     if (isConfirmed) {
-      const url = `packing_print.html?package_id=${package_id}`;
-      // === Download PDF (via packing_print.html di iframe) ===
+      const url = `print_packing_list.html?ids=${package_id}`;
       Swal.fire({
         title: 'Menyiapkan PDF...',
         html: 'File akan diunduh otomatis.',
@@ -167,7 +166,7 @@ async function printPackingList(package_id) {
 
     } else if (dismiss === Swal.DismissReason.cancel) {
       // === Print Langsung (open tab) ===
-      window.open(`packing_print.html?package_id=${package_id}`, '_blank');
+      window.open(`print_packing_list.html?ids=${package_id}`, '_blank');
     }
 
   } catch (error) {
@@ -180,7 +179,7 @@ async function printPackingList(package_id) {
 }
 
 function printPDFPackage(package_id) {
-  const printWindow = window.open(`packing_print.html?package_id=${package_id}`, '_blank');
+  const printWindow = window.open(`print_packing_list.html?ids==${package_id}`, '_blank');
 }
 
 async function printBulkPackingList() {

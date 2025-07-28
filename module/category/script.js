@@ -18,6 +18,7 @@ async function fillFormData(data) {
   console.log(data);
   document.getElementById('formCat').value = data.business_category || '';
   document.getElementById('formDesc').value = data.description || '';
+  document.getElementById('formStatus').value = data.status_id || '';
 }
 
 
@@ -84,10 +85,8 @@ function loadDropdownCall() {
       <span class="font-medium sm:hidden">Role</span>
       ${item.status}
       <div class="dropdown-menu hidden fixed w-48 bg-white border rounded shadow z-50 text-sm">
-       <button onclick="event.stopPropagation(); handleEdit(${item.business_category_id}, '${item.business_category}', 'quotation')" class="block w-full text-left px-4 py-2 hover:bg-gray-100">✏️ Edit User</button>
-        <button onclick="event.stopPropagation(); handleDelete(${item.business_category_id})" class="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600">
-          🗑 Delete User
-        </button>
+        <button onclick="event.stopPropagation(); handleEdit(${item.business_category_id}, '${item.business_category}')" class="block w-full text-left px-4 py-2 hover:bg-gray-100">✏️ Edit Category</button>
+        <button onclick="event.stopPropagation(); handleDelete(${item.business_category_id})" class="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600">🗑 Delete Category</button>
       </div>
     </td>
   </tr>`;
@@ -104,10 +103,11 @@ function loadDropdownCall() {
   <label for="formCat" class="block text-sm font-medium text-gray-700 dark:text-gray-200 text-left">Kode</label>
   <input id="formCat" name="business_category" type="text" class="form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
 
-
-
-  <label for="formName" class="block text-sm font-medium text-gray-700 dark:text-gray-200 text-left">Deskripsi</label>
+  <label for="formDesc" class="block text-sm font-medium text-gray-700 dark:text-gray-200 text-left">Deskripsi</label>
   <input id="formDesc" name="description" type="text" class="form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+  <label for="formStatus" class="hidden block text-sm font-medium text-gray-700 dark:text-gray-200 text-left">Status</label>
+  <input id="formStatus" name="status_id" type="text" value="1" class="hidden form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
 
 </form>
 

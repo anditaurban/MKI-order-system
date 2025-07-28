@@ -1,6 +1,6 @@
 pagemodule = 'Product';
 colSpanCount = 9;
-setDataType('product_bundling');
+setDataType('product');
 fetchAndUpdateData();
 
   window.rowTemplate = function (item, index, perPage = 10) {
@@ -38,9 +38,11 @@ fetchAndUpdateData();
   
     <td class="px-6 py-4 text-sm text-center text-gray-700 flex justify-between sm:table-cell">
       <span class="font-medium sm:hidden">Kemitraan</span>
-        ${item.business_category}
+        ${item.business_categories.length > 0 
+          ? item.business_categories.map(cat => cat.business_category).join(', ') 
+          : '-'}
       <div class="dropdown-menu hidden fixed w-48 bg-white border rounded shadow z-50 text-sm">
-        <button onclick="event.stopPropagation(); loadModuleContent('bundling_form', '${item.product_id}', '${item.product.replace(/'/g, "\\'")}');" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
+        <button onclick="event.stopPropagation(); loadModuleContent('product_form', '${item.product_id}', '${item.product}');" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
           ✏️ Edit Product
         </button>
         <button onclick="event.stopPropagation(); handleDelete(${item.product_id})" class="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600">
@@ -56,6 +58,6 @@ fetchAndUpdateData();
   document.getElementById('addButton').addEventListener('click', () => {
     // showFormModal();
     // loadDropdownCall();
-    loadModuleContent('bundling_form');
+    loadModuleContent('product_form');
   });
 

@@ -15,6 +15,7 @@ const company_phone = company.company_phone;
 const printer_setting = company.printer_setting;
 
 const default_module = 'dashboard';
+// const default_module = 'product_form';
 
 let currentScript = null;
 let formHtml = null;
@@ -154,7 +155,7 @@ function hideLoading() {
   }, delay);
 }
 
-function loadModuleContent(module, Id, Detail) {
+function loadModuleContent(module, Id, Detail, Detail2) {
   showLoading();
   setActiveMenu(module);
   currentDataSearch='';
@@ -171,6 +172,7 @@ function loadModuleContent(module, Id, Detail) {
       if (data.trim() !== '') {
         window.detail_id = Id;
         window.detail_desc = Detail;
+        window.detail2_desc = Detail2;
       }
 
       if (currentScript) {

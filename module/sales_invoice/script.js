@@ -1,15 +1,20 @@
 pagemoduleparent = 'sales'
 
+  
   setTodayDate();
   loadCustomerList();
-  loadProdukList();
   formatNumberInputs();
+  loadCourierList();
 
   if (window.detail_id && window.detail_desc){
+    loadProdukList(window.detail2_desc);
     loadDetailSales(detail_id, detail_desc)
     loadPaymentDetail(detail_id, 0)
     formatNumberInputs();
+  }else{
+    // loadProdukList();
   }
+  
   
 
 
@@ -21,12 +26,13 @@ async function loadCustomerList() {
   customerList = json.listData || [];
 }
 
-async function loadProdukList() {
-  const res = await fetch(`${baseUrl}/list/product/${owner_id}`, {
+async function loadProdukList(customer_id) {
+  const res = await fetch(`${baseUrl}/list/product_sales/${customer_id}`, {
     headers: { Authorization: `Bearer ${API_TOKEN}` }
   });
   const json = await res.json();
   produkList = json.listData || [];
+  console.log(res);
 }
 
 function filterKlienSuggestions() {
@@ -48,6 +54,7 @@ function filterKlienSuggestions() {
       document.getElementById('city').value = item.region_name;
       document.getElementById('city_id').value = item.region_id;
       suggestionBox.classList.add('hidden');
+      loadProdukList(item.pelanggan_id);
     };
     suggestionBox.appendChild(li);
   });
@@ -68,8 +75,10 @@ function tambahItem() {
     </td>
     <td class="px-3 py-2 border text-right"><input type="number" class="w-full border rounded px-2 text-right itemQty" value="1" oninput="recalculateTotal()" /></td>
     <td class="px-3 py-2 border text-right"><input type="text" class="w-full border rounded px-2 text-right itemHarga" oninput="recalculateTotal()" /></td>
+    <td class="px-3 py-2 border text-right itemBerat hidden">0</td>
     <td class="px-3 py-2 border text-right"><input type="text" class="w-full border rounded px-2 text-right itemDiskon" oninput="recalculateTotal()" /></td>
     <td class="px-3 py-2 border text-right itemSubtotal">0</td>
+    
     <td class="px-3 py-2 border text-center">
       <button onclick="this.closest('tr').remove(); recalculateTotal();" class="text-red-500 hover:underline">🗑️</button>
     </td>
@@ -93,7 +102,11 @@ function filterProdukDropdownCustom(inputEl) {
     div.textContent = p.product;
     div.onclick = () => {
       inputEl.value = p.product;
-      inputEl.closest("tr").querySelector(".itemHarga").value = p.sale_price.toLocaleString('id-ID');
+      // inputEl.closest("tr").querySelector(".itemHarga").value = p.sale_price.toLocaleString('id-ID');
+      const tr = inputEl.closest("tr");
+      tr.querySelector(".itemHarga").value = p.sale_price.toLocaleString('id-ID');
+      tr.querySelector(".itemBerat").innerText = (p.weight || 0);
+
       const opt = Array.from(select.options).find(o => o.value == p.product_id);
       if (opt) select.value = opt.value;
       dropdown.classList.add("hidden");
@@ -108,12 +121,15 @@ function filterProdukDropdownCustom(inputEl) {
 function recalculateTotal() {
   const rows = document.querySelectorAll('#tabelItem tr');
   let subtotal = 0;
+  let weight = 0;
   rows.forEach(row => {
     const qty = parseFloat(row.querySelector('.itemQty')?.value.replace(/[^\d]/g, '') || 0);
     const harga = parseFloat(row.querySelector('.itemHarga')?.value.replace(/[^\d]/g, '') || 0);
     const itemdiskon = parseFloat(row.querySelector('.itemDiskon')?.value.replace(/[^\d]/g, '') || 0);
+    const berat = parseFloat(row.querySelector('.itemBerat')?.innerText.replace(/[^\d]/g, '') || 0);
     const sub = (qty * harga) - itemdiskon;
     subtotal += sub;
+    weight += qty * berat;
     row.querySelector('.itemSubtotal').innerText = `${sub.toLocaleString('id-ID')}`;
   });
   const diskon = parseInt(document.getElementById('inputDiskon').value.replace(/[^\d]/g, '') || 0);
@@ -125,6 +141,7 @@ function recalculateTotal() {
   document.getElementById('pajak').innerText = `${pajak.toLocaleString('id-ID')}`;
   document.getElementById('ongkir').innerText = `${shipping.toLocaleString('id-ID')}`;
   document.getElementById('total').innerText = `${total.toLocaleString('id-ID')}`;
+  document.getElementById('totalBerat').innerText = `${weight.toLocaleString('id-ID')} gr`;
 }
 
 function setTodayDate() {
@@ -169,6 +186,8 @@ async function submitInvoice() {
     const discount = parseInt(document.getElementById('inputDiskon').value.replace(/[^\d]/g, '') || 0);
     const shipping = parseInt(document.getElementById('inputShipping').value.replace(/[^\d]/g, '') || 0);
     const tax = Math.round(0 * subtotal);
+    const courier_id = parseInt(document.getElementById('selectCourier').value || 0);
+    const courier_note = document.getElementById('courierNote').value;
 
     const body = {
       owner_id,
@@ -179,7 +198,9 @@ async function submitInvoice() {
       tax_percent: 0,
       tax: tax,
       shipping: shipping,
-      sales_detail
+      sales_detail,
+      courier_id: courier_id,
+      courier_note: courier_note
     };
 
     console.log(body);
@@ -276,6 +297,37 @@ async function updateInvoice() {
   }
 }
 
+async function loadCourierList() {
+  try {
+    const res = await fetch(`${baseUrl}/list/courier/${owner_id}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${API_TOKEN}`
+      }
+    });
+
+    const result = await res.json();
+    const list = result.listData || [];
+
+    const courierSelect = document.getElementById('selectCourier');
+    courierSelect.innerHTML = '<option value="">-- Pilih Kurir --</option>';
+
+    list.forEach(courier => {
+      const option = document.createElement('option');
+      option.value = courier.courier_id; // atau courier.id jika ingin ID
+      option.textContent = courier.courier;
+      courierSelect.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Gagal memuat daftar kurir:', error);
+  }
+}
+
+  function handleCourierChange() {
+    const selected = document.getElementById('selectCourier').value;
+    console.log('Kurir dipilih:', selected);
+    // kamu bisa lanjutkan fetch tarif berdasarkan berat dan kota jika perlu
+  }
 
 function loadDetailSales(Id, Detail) {
   window.detail_id = Id;
@@ -298,6 +350,10 @@ function loadDetailSales(Id, Detail) {
       document.getElementById('inputShipping').value = detail.shipping.toLocaleString('id-ID');
       document.getElementById('statusPackage').innerText = detail.status_package || '-';
       document.getElementById('statusShipment').innerText = detail.status_shipment || '-';
+      document.getElementById('selectCourier').value = detail.courier_id;
+      document.getElementById('courierNote').value = detail.courier_note;
+      console.log(detail);
+
 
       // Toggle tombol berdasarkan status
       const simpanBtn = document.querySelector('button[onclick="submitInvoice()"]');
@@ -322,10 +378,12 @@ function loadDetailSales(Id, Detail) {
         row.querySelector(".itemNama").value = item.product_id;
         row.querySelector(".itemQty").value = item.qty;
         row.querySelector(".itemHarga").value = item.unit_price.toLocaleString('id-ID');
+        row.querySelector(".itemBerat").innerText = item.weight.toLocaleString('id-ID') || 0;
         row.querySelector(".itemDiskon").value = item.discount_price.toLocaleString('id-ID');
-        // const select = row.querySelector(".itemNama");
-        // const match = Array.from(select.options).find(o => o.textContent === item.product_id);
-        // if (match) select.value = match.value;
+        const select = row.querySelector(".itemNama");
+        const match = Array.from(select.options).find(o => o.textContent === item.product_id);
+        if (match) select.value = match.value;
+        console.log(item.weight);
       });
 
       recalculateTotal();

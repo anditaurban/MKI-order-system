@@ -143,7 +143,7 @@ function loadDropdownCall() {
         ${item.status}
       </span>
       <div class="dropdown-menu hidden fixed w-48 bg-white border rounded shadow z-50 text-sm">
-        <button onclick="event.stopPropagation(); loadModuleContent('sales_invoice', '${item.sales_id}', '${item.no_inv}');" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
+        <button onclick="event.stopPropagation(); loadModuleContent('sales_invoice', '${item.sales_id}', '${item.no_inv}', '${item.customer_id}');" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
           👁️ View Order
         </button>
     ${item.status_id === 2 || item.status_id === 6 ? `

@@ -131,6 +131,11 @@ function loadDropdownCall() {
       ${item.courier}
     </td>
   
+  
+    <td class="px-6 py-4 text-sm text-gray-700 border-b sm:border-0 flex justify-between sm:table-cell">
+      <span class="font-medium sm:hidden">Ekspedisi</span>
+      ${item.courier_note}
+    </td>
     <td class="px-6 py-4 text-sm text-gray-700 border-b sm:border-0 flex justify-between sm:table-cell">
       <span class="font-medium sm:hidden">PIC</span>
       ${item.pic_name}
@@ -141,11 +146,11 @@ function loadDropdownCall() {
       ${item.status}     
     </td>
           <div class="dropdown-menu hidden fixed w-48 bg-white border rounded shadow z-50 text-sm">
-            ${item.status_id === 1 ? `
-        <button onclick="event.stopPropagation(); showShipmentUpdateForm('${item.shipment_id}', '${item.no_inv}', '${item.no_package}');" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
+
+        <button onclick="event.stopPropagation(); showShipmentUpdateForm('${item.shipment_id}', '${item.no_inv}', '${item.no_package}', '${item.courier_id}', '${item.courier_note}');" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
           🖨️ Input Resi
         </button>
-           ` : ''}
+
         ${item.courier && item.shipment_receipt !== "" ? `
         <button onclick="event.stopPropagation(); printShippingLabel('${item.shipment_id}');" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
           🖨️ Print Shipping Label
@@ -222,7 +227,7 @@ function printShippingLabel(shipment_id) {
 
           // Buat iframe tersembunyi
           const iframe = document.createElement("iframe");
-          iframe.src = `shipping_label.html?shipment_id=${shipment_id}`;
+          iframe.src = `print_shipping_label.html?ids=${shipment_id}`;
           iframe.style.width = "0";
           iframe.style.height = "0";
           iframe.style.border = "none";
@@ -237,27 +242,42 @@ function printShippingLabel(shipment_id) {
       });
     } else if (result.dismiss === Swal.DismissReason.cancel) {
       // === Langsung Print (buka tab baru) ===
-      window.open(`shipping_label.html?shipment_id=${shipment_id}`, '_blank');
+      window.open(`print_shipping_label.html?ids=${shipment_id}`, '_blank');
     }
   });
 }
 
-async function showShipmentUpdateForm(shipment_id = null, no_inv = null, no_package = null) {
+
+async function showShipmentUpdateForm(
+  shipment_id = null,
+  no_inv = null,
+  no_package = null,
+  courier_id = null,
+  courier_note = null
+) {
   try {
     let shipmentList = [];
 
+    // Ambil daftar kurir dari API
+    const courierRes = await fetch(`${baseUrl}/list/courier/${owner_id}`, {
+      headers: {
+        'Authorization': `Bearer ${API_TOKEN}`
+      }
+    });
+    const courierJson = await courierRes.json();
+    const couriers = courierJson?.listData || [];
+
     if (shipment_id && no_inv && no_package) {
-      // Jika parameter dikirim, gunakan langsung
       shipmentList.push({
-        shipment_id: shipment_id,
-        no_package: no_package,
-        no_inv: no_inv,
-        courier: '',
+        shipment_id,
+        no_package,
+        no_inv,
+        courier_id: courier_id ?? '',
+        courier_note: courier_note ?? '',
         shipment_receipt: '',
         date: new Date().toISOString().split('T')[0]
       });
     } else {
-      // Jika tidak ada parameter, ambil semua dari API
       const res = await fetch(`${baseUrl}/counting/sales_package_unshipped/${owner_id}`, {
         headers: {
           'Authorization': `Bearer ${API_TOKEN}`
@@ -274,16 +294,24 @@ async function showShipmentUpdateForm(shipment_id = null, no_inv = null, no_pack
         shipment_id: s.shipment_id,
         no_package: s.no_package,
         no_inv: s.no_inv,
-        courier: '',
+        courier_id: '',
+        courier_note: '',
         shipment_receipt: '',
         date: new Date().toISOString().split('T')[0]
       }));
+
+      
     }
 
-    // Buat form input
+    // Generate form HTML
     let formHtml = `<form id="dataform" class="space-y-4 text-left text-sm text-gray-700 dark:text-gray-200">`;
 
     shipmentList.forEach((s, i) => {
+      const courierOptions = couriers.map(c => {
+        const selected = c.courier_id == s.courier_id ? 'selected' : '';
+        return `<option value="${c.courier_id}" ${selected}>${c.courier}</option>`;
+      }).join('');
+
       formHtml += `
         <div class="border border-gray-300 dark:border-gray-600 p-3 rounded-md">
           <div class="mb-2 font-medium">Shipment ID ${s.shipment_id}</div>
@@ -292,15 +320,24 @@ async function showShipmentUpdateForm(shipment_id = null, no_inv = null, no_pack
             Invoice: <strong>${s.no_inv}</strong>
           </div>
 
+          <!-- Kurir -->
           <label for="courier_${i}" class="block mb-1">Kurir</label>
-          <input id="courier_${i}" type="text" placeholder="Nama Kurir"
-            value="${s.courier || ''}"
-            class="form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <select id="courier_${i}" class="form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-white">
+            <option value="">-- Pilih Kurir --</option>
+            ${courierOptions}
+          </select>
 
+          <!-- Catatan Kurir -->
+          <label for="note_${i}" class="block mt-3 mb-1">Catatan Kurir</label>
+          <input id="note_${i}" type="text" placeholder="Contoh: Taruh di pos satpam"
+            value="${s.courier_note || ''}"
+            class="form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-white" />
+
+          <!-- Nomor Resi -->
           <label for="resi_${i}" class="block mt-3 mb-1">Nomor Resi</label>
           <input id="resi_${i}" type="text" placeholder="No. Resi"
             value="${s.shipment_receipt || ''}"
-            class="form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            class="form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-white" />
         </div>
       `;
     });
@@ -315,21 +352,31 @@ async function showShipmentUpdateForm(shipment_id = null, no_inv = null, no_pack
       focusConfirm: false,
       preConfirm: () => {
         shipmentList.forEach((s, i) => {
-          s.courier = String(document.getElementById(`courier_${i}`).value || '-');
+          s.courier_id = parseInt(document.getElementById(`courier_${i}`).value) || null;
+          s.courier_note = String(document.getElementById(`note_${i}`).value || '-');
           s.shipment_receipt = String(document.getElementById(`resi_${i}`).value || '-');
         });
       }
     });
 
+    console.log(shipmentList);
+
     if (isConfirmed) {
-      updateBulkShipment(shipmentList);
+      updateBulkShipment(shipmentList.map(s => ({
+        user_id: owner_id,
+        courier_id: s.courier_id,
+        courier_note: s.courier_note,
+        shipment_receipt: s.shipment_receipt,
+        shipment_id: s.shipment_id
+      })));
     }
 
   } catch (err) {
     console.error(err);
-    Swal.fire('Error', 'Gagal mengambil data shipment.', 'error');
+    Swal.fire('Error', 'Gagal mengambil data shipment atau courier.', 'error');
   }
 }
+
 
 
 
@@ -344,6 +391,8 @@ async function updateBulkShipment(shipmentList) {
         },
         body: JSON.stringify({
           courier: s.courier,
+          courier_id: s.courier_id,
+          courier_note: s.courier_note,
           shipment_receipt: s.shipment_receipt,
           user_id: user_id
         })

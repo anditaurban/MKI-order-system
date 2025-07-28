@@ -1,4 +1,4 @@
-async function loadDashboardSummary() {
+async function loadDashboardSummary(period = 'weekly') {
   const headers = {
     'Authorization': `Bearer ${API_TOKEN}`,
     'Content-Type': 'application/json'
@@ -6,9 +6,9 @@ async function loadDashboardSummary() {
 
   try {
     const [resTransactions, resItemsSold, resSales] = await Promise.all([
-      fetch(`${baseUrl}/dashboard/total_transactions/${owner_id}`, { headers }),
-      fetch(`${baseUrl}/dashboard/total_items_sold/${owner_id}`, { headers }),
-      fetch(`${baseUrl}/dashboard/total_sales/${owner_id}`, { headers })
+      fetch(`${baseUrl}/dashboard/total_transactions/${owner_id}?period=${period}`, { headers }),
+      fetch(`${baseUrl}/dashboard/total_items_sold/${owner_id}?period=${period}`, { headers }),
+      fetch(`${baseUrl}/dashboard/total_sales/${owner_id}?period=${period}`, { headers })
     ]);
 
     const transactionsData = await resTransactions.json();
@@ -31,6 +31,9 @@ async function loadDashboardSummary() {
 }
 
 async function loadSalesGraph(period = 'weekly') {
+  loadDashboardSummary(period);
+  loadTopProducts(period); 
+  loadTopCustomers(period);
   currentPeriod = period; // simpan state period
   chartType = document.getElementById('chartTypeSelector')?.value || 'bar'; // ambil jenis chart terbaru
 
@@ -52,7 +55,6 @@ async function loadSalesGraph(period = 'weekly') {
     });
 
     const result = await response.json();
-    console.log(result);
 
     if (!result.data.graphData || !Array.isArray(result.data.graphData.data)) {
       throw new Error('Invalid graph data');
@@ -137,8 +139,8 @@ async function loadSalesGraph(period = 'weekly') {
   }
 }
 
-async function loadTopProducts() {
-  const endpoint = `${baseUrl}/dashboard/top_products/${owner_id}`;
+async function loadTopProducts(period = 'weekly') {
+  const endpoint = `${baseUrl}/dashboard/top_products/${owner_id}?period=${period}`;
 
   try {
     const response = await fetch(endpoint, {
@@ -178,14 +180,48 @@ async function loadTopProducts() {
   }
 }
 
+async function loadTopCustomers(period = 'weekly') {
+  const endpoint = `${baseUrl}/dashboard/top_customers/${owner_id}?period=${period}`;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${API_TOKEN}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const result = await response.json();
+    const products = result.data || [];
+
+    const container = document.getElementById('topCustomersContainer');
+    container.innerHTML = '';
+
+    if (products.length === 0) {
+      container.innerHTML = '<p class="text-gray-500 text-sm">Tidak ada data produk.</p>';
+      return;
+    }
+
+    products.forEach((item, index) => {
+      const html = `
+        <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow text-sm">
+          <div class="flex items-center space-x-3">
+            <span class="text-gray-500 font-medium">#${index + 1}</span>
+            <span class="font-semibold text-gray-800">${item.nama}</span>
+          </div>
+          <span class="text-blue-600 font-semibold">${item.total_transactions.toLocaleString('id-ID')} transaksi</span>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', html);
+    });
+
+  } catch (error) {
+    console.error('Gagal memuat top customer:', error);
+  }
+}
 
 
 
-
-  
-
-
-loadDashboardSummary();
 loadSalesGraph('weekly');
-loadTopProducts(); 
 

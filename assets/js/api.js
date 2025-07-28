@@ -1,12 +1,22 @@
-const mode = 'development'; // development | production
+const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const mode = isLocalhost ? 'development' : 'production';
 const baseUrl = mode === 'production'
   ? 'https://apimki.katib.cloud'
   : 'https://devngomset.katib.cloud';
 const API_TOKEN = '3ed66de3108ce387e9d134c419c0fdd61687c3b06760419d32493b18366999d2';
+
+const API_KEY = 'yTigmA0W7a9e30666d9434a0JlGNkxwv';
+const BASE_URL = 'https://rajaongkir.komerce.id/api/v1/destination';
+const options = { 
+  mode: 'no-cors', 
+  method: 'GET', 
+  headers: { accept: 'application/json', key: API_KEY } };
+
 let url = null;
 let currentDataSearch = '';
-let currentPeriod = 'weekly'; // default
-let chartType = 'bar'; // default (bisa bar atau line)
+let currentPeriod = 'weekly';
+let chartType = 'bar';
+let bundlingItems = [];
 
 
 const defaultState = {
