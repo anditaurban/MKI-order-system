@@ -1,5 +1,4 @@
 const user = JSON.parse(localStorage.getItem('user') || '{}');
-const user_detail = JSON.parse(localStorage.getItem('user_detail') || '{}');
 const company = JSON.parse(localStorage.getItem('company') || '{}');
 
 const owner_id = user.owner_id;
@@ -7,14 +6,16 @@ const user_id = user.user_id;
 const status_active = user.status_active;
 const level = user.level;
 const username = user.username;
-const nama = user_detail.nama;
 const logo = company.logo;
 const business_place = company.business_place;
 const address = company.address;
 const company_phone = company.company_phone;
 const printer_setting = company.printer_setting;
+// const userRole = 'finance'; // contoh: 'superadmin', 'sales', 'finance', 'shipping'
+const userRole = user.role || 'guest';
 
-const default_module = 'dashboard';
+// const default_module = 'dashboard';
+const default_module = getDefaultModule(userRole);
 // const default_module = 'product_form';
 
 let currentScript = null;
@@ -31,6 +32,7 @@ const day = String(today.getDate()).padStart(2, '0');
 const formattedDate = `${year}-${month}-${day}`;
 let cashier_id = 0;
 let current_date = formattedDate;
+let nama = "User";
 
 const scriptsToLoad = [
   `./assets/js/utils.js`,
@@ -54,37 +56,16 @@ function finance(value) {
   }).format(value);
 }
 
-// function openLink(baseURL) {
-//     // Retrieve all localStorage data from the current tab
-//     const data = {
-//         owner_id: localStorage.getItem('owner_id'),
-//         user_id: localStorage.getItem('user_id'),
-//         status_active: localStorage.getItem('status_active'),
-//         level: localStorage.getItem('level'),
-//         nama: localStorage.getItem('nama'),
-//         logo: localStorage.getItem('logo'),
-//         business_place: localStorage.getItem('business_place'),
-//         address: localStorage.getItem('address'),
-//         company_phone: localStorage.getItem('company_phone'),
-//         printer_setting: localStorage.getItem('printer_setting') // Keep as a string
-//     };
-
-//     // Open the new tab
-//     const newWindow = window.open(baseURL, '_blank');
-
-//     // Wait until the new tab is fully loaded
-//     newWindow.onload = function () {
-//         // Once the new tab is loaded, set the localStorage data
-//         Object.keys(data).forEach(key => {
-//             if (data[key] !== null) {
-//                 newWindow.localStorage.setItem(key, data[key]);
-//             }
-//         });
-
-//         // Optional: Log to verify that data is being set
-//         console.log("Session data set in new tab:", data);
-//     };
-// }
+function getDefaultModule(role) {
+  const roleDefault = {
+    superadmin: 'dashboard',
+    sales: 'sales',
+    finance: 'sales',
+    shipping: 'package',
+    packing: 'package',
+  };
+  return roleDefault[role] || 'dashboard';
+}
 
 async function loadSection(sectionPath) {
   try {
@@ -156,6 +137,7 @@ function hideLoading() {
 }
 
 function loadModuleContent(module, Id, Detail, Detail2) {
+  
   showLoading();
   setActiveMenu(module);
   currentDataSearch='';

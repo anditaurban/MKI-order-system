@@ -3,6 +3,23 @@ colSpanCount = 9;
 setDataType('sales');
 fetchAndUpdateData();
 
+document.getElementById('addButton').addEventListener('click', () => {
+  // showFormModal();
+  // loadDropdownCall();
+  loadModuleContent('sales_invoice');
+});
+
+function loadSummary(dataSummary) {
+  // console.log("Data Summary:", dataSummary);
+
+  // contoh isi ke elemen HTML tertentu
+  document.getElementById("unpaid").textContent = dataSummary.menunggu_pembayaran;
+  document.getElementById("partialpaid").textContent = dataSummary.bayar_sebagian;
+  document.getElementById("unverified").textContent = dataSummary.sedang_diverifikasi;
+  document.getElementById("process").textContent = dataSummary.sedang_diproses;
+  document.getElementById("unsalesman").textContent = dataSummary.tanpa_salesman;
+}
+
 function validateFormData(formData, requiredFields = []) {
   console.log('Validasi Form');
   for (const { field, message } of requiredFields) {
@@ -122,6 +139,11 @@ function loadDropdownCall() {
       ${item.customer}
     </td>
   
+    <td class="px-6 py-4 text-sm text-gray-700 border-b sm:border-0 flex justify-between sm:table-cell">
+      <span class="font-medium sm:hidden">Pelanggan</span>
+      ${item.sales_type}
+    </td>
+  
     <td class="px-6 py-4 text-sm text-gray-700 border-b text-right sm:border-0 flex justify-between sm:table-cell">
       <span class="font-medium sm:hidden">Jumlah</span>
       ${formatRupiah(item.total)}
@@ -137,29 +159,32 @@ function loadDropdownCall() {
       ${item.pic_name}
     </td>
   
+    <td class="px-6 py-4 text-sm text-gray-700 border-b sm:border-0 flex justify-between sm:table-cell">
+      <span class="font-medium sm:hidden">PIC</span>
+      ${item.salesman || 'N/A'}
+    </td>
+  
     <td class="px-6 py-4 text-center text-sm text-gray-700 flex justify-between sm:table-cell">
       <span class="font-medium sm:hidden">Status</span>
-      <span class="${getStatusClass(item.status)}  px-2 py-1 rounded-full text-xs font-medium">
+      <span class="${getStatusClass(item.status_id)}  px-2 py-1 rounded-full text-xs font-medium">
         ${item.status}
       </span>
       <div class="dropdown-menu hidden fixed w-48 bg-white border rounded shadow z-50 text-sm">
         <button onclick="event.stopPropagation(); loadModuleContent('sales_invoice', '${item.sales_id}', '${item.no_inv}', '${item.customer_id}');" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
           👁️ View Order
         </button>
+
+      <button onclick="event.stopPropagation(); addSales('${item.sales_id}');" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
+        👔 Add Salesman
+      </button>
     ${item.status_id === 2 || item.status_id === 6 ? `
       <button onclick="event.stopPropagation(); addPayment('${item.sales_id}', '${item.remaining_payment}');" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
         💰 Add Payment
       </button>
     ` : ''}
 
-    ${item.status_id === 3 ? `
-      <button onclick="event.stopPropagation(); addPackage('${item.sales_id}');" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
-        📦 Process Package
-      </button>
-    ` : ''}
-
     ${item.status_id === 2 ? `
-      <button onclick="event.stopPropagation(); handleDelete(${item.pesanan_id})" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
+      <button onclick="event.stopPropagation(); deleteSales(${item.pesanan_id})" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
         🗑 Delete Order
       </button>
     ` : ''}
@@ -169,13 +194,8 @@ function loadDropdownCall() {
   </tr>`;
   };
   
-  document.getElementById('addButton').addEventListener('click', () => {
-    // showFormModal();
-    // loadDropdownCall();
-    loadModuleContent('sales_invoice');
-  });
+formHtml = ``
 
-  formHtml = ``
 requiredFields = [
     { field: 'formProject', message: 'Project Name is required!' },
     { field: 'formPM', message: 'Project Manager is required!' },
@@ -391,14 +411,133 @@ async function addPackage(sales_id) {
   }
 }
 
+async function addSales(sales_id) {
+  try {
+    const res = await fetch(`${baseUrl}/list/salesman/${owner_id}`, {
+      headers: {
+        'Authorization': `Bearer ${API_TOKEN}`
+      }
+    });
 
+    const { listData } = await res.json();
 
+    if (!listData || listData.length === 0) {
+      Swal.fire('Gagal', 'Tidak ada data salesman tersedia.', 'error');
+      return;
+    }
 
+    const optionsHtml = listData.map(salesman => `
+      <option value="${salesman.salesman_id}">
+        ${salesman.name} - ${salesman.role} (${salesman.level})
+      </option>
+    `).join('');
 
+    const { value: selectedSalesman } = await Swal.fire({
+      title: 'Pilih Salesman',
+      html: `
+        <label for="swal-salesman" class="block text-sm font-medium text-gray-700 dark:text-gray-200 text-left">Salesman</label>
+        <select id="swal-salesman" class="form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 
+            text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">--- Pilih Salesman ---</option>
+          ${optionsHtml}
+        </select>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Simpan',
+      preConfirm: () => {
+        const salesmanId = document.getElementById('swal-salesman').value;
+        if (!salesmanId) {
+          Swal.showValidationMessage(`Salesman wajib dipilih.`);
+          return false;
+        }
+        return parseInt(salesmanId);
+      }
+    });
 
+    if (!selectedSalesman) return;
 
+    const payload = {
+      salesman_id: selectedSalesman
+    };
 
+    const resPost = await fetch(`${baseUrl}/update/salesman/${sales_id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_TOKEN}`
+      },
+      body: JSON.stringify(payload)
+    });
 
+    const data = await resPost.json();
 
+    if (resPost.ok) {
+      Swal.fire('Sukses', 'Salesman berhasil diperbarui.', 'success');
+      fetchAndUpdateData?.();
+    } else {
+      Swal.fire('Gagal', data.message || 'Terjadi kesalahan saat memperbarui salesman.', 'error');
+    }
 
+  } catch (err) {
+    console.error(err);
+    Swal.fire('Error', 'Terjadi kesalahan saat memproses.', 'error');
+  }
+}
+
+async function deleteSales(sales_id) {
+  const { value: reason } = await Swal.fire({
+    title: 'Batalkan Penjualan?',
+    input: 'textarea',
+    inputLabel: 'Alasan pembatalan',
+    inputPlaceholder: 'Tulis alasan di sini...',
+    inputAttributes: {
+      'aria-label': 'Alasan pembatalan'
+    },
+    showCancelButton: true,
+    confirmButtonText: 'Kirim',
+    cancelButtonText: 'Batal',
+    inputValidator: (value) => {
+      if (!value) {
+        return 'Alasan tidak boleh kosong!';
+      }
+    }
+  });
+
+  if (!reason) return;
+
+  try {
+    const response = await fetch(`${baseUrl}/delete/sales/${sales_id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_TOKEN}`
+      },
+      body: JSON.stringify({ notes: reason })
+    });
+
+    const result = await response.json();
+
+    if (result.data?.success) {
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil Dibatalkan',
+        text: result.data.message,
+        timer: 2000,
+        showConfirmButton: false
+      });
+
+      // Refresh table atau redirect jika perlu
+      fetchAndUpdateData();
+    } else {
+      throw new Error(result.data?.message || 'Gagal membatalkan penjualan');
+    }
+  } catch (error) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Gagal',
+      text: error.message || 'Terjadi kesalahan'
+    });
+  }
+}
 

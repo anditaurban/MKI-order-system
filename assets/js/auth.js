@@ -73,12 +73,12 @@ sendOtpButton?.addEventListener('click', async function () {
       phoneInput.readOnly = true;
     } else {
       messageOTP.textContent = 'Gagal mengirim OTP. Silahkan coba lagi.';
-      messageOTP.style.color = 'yellow';
+      messageOTP.style.color = 'red';
     }
   } catch (error) {
     console.error('Error fetching OTP:', error);
     messageOTP.textContent = 'Gagal mengirim OTP. Silahkan coba lagi.';
-    messageOTP.style.color = 'yellow';
+    messageOTP.style.color = 'red';
   } finally {
     hideLoading();
     sendOtpButton.disabled = false;

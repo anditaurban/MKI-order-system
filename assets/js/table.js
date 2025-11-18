@@ -38,20 +38,34 @@ function debounceSearch() {
       }
     }
 
+  async function filterData(filter) {
+    fetchAndUpdateData('', filter)
+    document.getElementById("dropdownFilterMenu").classList.add("hidden");
+  }
+
+  async function resetfilterData() {
+    currentFilterType = null;
+  }
+
 // ---------------------------------------
 // LOAD DATA FUNCTIONS
 // ---------------------------------------
 
-async function fetchAndUpdateData(id = null) {
+async function fetchAndUpdateData(id = null, filter = '') {
     const tableBodyId = 'tableBody';
     showLoadingSpinner(document.querySelector(`#${tableBodyId}`));
 
     try {
-        const response = await fetchData(currentDataType, state[currentDataType].currentPage, id);
+        const response = await fetchData(currentDataType, state[currentDataType].currentPage, id, filter);
         if (!response || !response.tableData) throw new Error('Invalid response from the API');
 
         dataItems = response.tableData;
+        dataSummary = response.summaryData;
         updateState(response);
+
+        if (dataSummary) {
+          loadSummary(dataSummary);
+        }
 
         setTimeout(() => {
             loadData();
@@ -74,21 +88,45 @@ function showLoadingSpinner(tableBody) {
       </tr>
     `;
   }
-  
-  function getStatusClass(status) {
-    switch (status.toLowerCase()) {
-      case 'on progress':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-gray-100 text-gray-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-blue-100 text-blue-800';
-    }
+
+const statusClassMap = {
+  sales: {
+    '1': 'bg-blue-100 text-blue-800',               //Diproses
+    '2': 'bg-red-100 text-red-800',                 //Menunggu Pembayaran
+    '3': 'bg-green-100 text-green-800',             //Pembayaran Lunas
+    '4': 'bg-gray-100 text-gray-800',               //Dibatalkan
+    '5': 'bg-gray-100 text-gray-800',               //Retur
+    '6': 'bg-yellow-100 text-yellow-800',           //Pembayaran Sebagian
+    '7': 'bg-yellow-100 text-yellow-800',           //Pembayaran Sedang Diverifikasi
+    '8': 'bg-green-100 text-green-800'              //Paket Terkirim
+  },
+  sales_receipt: {
+    '1': 'bg-yellow-100 text-yellow-800',           //Menunggu Validasi
+    '2': 'bg-green-100 text-green-800',             //Valid
+    '3': 'bg-red-100 text-red-800'                  //Tidak Valid"
+  },
+  sales_package: {
+    '1': 'bg-red-100 text-red-800',                 //Menunggu Pengepakan
+    '2': 'bg-blue-100 text-blue-800',               //Paket Siap
+    '3': 'bg-green-100 text-green-800',             //Diproses
+    '4': 'bg-blue-100 text-blue-800',               //Paket Dikirim
+    '5': 'bg-yellow-100 text-yellow-800'            //Sedang Dipack
+  },
+  sales_shipment: {
+    '1': 'bg-red-100 text-red-800',                 //Menunggu Kurir"
+    '2': 'bg-green-100 text-green-800'              //Paket Dikirim
   }
+};
+
+function getStatusClass(status) {
+//   console.log('Status=' , status)
+//   console.log('Type=' , currentDataType)
+  if (!status) return 'bg-gray-100 text-gray-800';
+  const type = currentDataType; // sales, receipt, package, shipment
+  const map = statusClassMap[type] || {};
+  const key = status;
+  return map[key] || map['default'] || 'bg-blue-100 text-blue-800';
+}
 
 function updateState(response) {
     state[currentDataType].totalPages = response.totalPages;
@@ -374,12 +412,28 @@ function toggleDropdown(row, event) {
     
     if (dropdown) dropdown.classList.toggle('hidden');
 }
+
+function toggleFilterDropdown() {
+  document.getElementById("dropdownFilterMenu").classList.toggle("hidden");
+}
   
 document.addEventListener('click', function (e) {
+  // Tutup semua dropdown di dalam tabel ketika klik di luar <tr>
   if (!e.target.closest('tr')) {
     document.querySelectorAll('.dropdown-menu').forEach(el => el.classList.add('hidden'));
   }
+
+  // Tutup filter dropdown jika elemen ada
+  const dropdownBtn = document.getElementById("dropdownFilterButton");
+  const dropdownMenu = document.getElementById("dropdownFilterMenu");
+
+  if (dropdownBtn && dropdownMenu) {
+    if (!dropdownBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+      dropdownMenu.classList.add("hidden");
+    }
+  }
 });
+
   
 // ---------------------------------------
 // DELETE DATA FUNCTIONS
@@ -552,5 +606,115 @@ function handleUpdateResponse(data) {
     });
 }
 
+async function exportData() {
+  console.log("📦 [1/6] Membuka form filter tanggal...");
+
+  // 1️⃣ SweetAlert form pakai Tailwind-style
+  const { value: formValues } = await Swal.fire({
+    title: 'Filter Data Export',
+    html: `
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+        <div>
+          <label for="start-date" class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Dari tanggal:</label>
+          <input id="start-date" type="date" 
+            class="form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
+                   bg-white dark:bg-gray-700 text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div>
+          <label for="end-date" class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Sampai tanggal:</label>
+          <input id="end-date" type="date" 
+            class="form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
+                   bg-white dark:bg-gray-700 text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+      </div>
+    `,
+    confirmButtonText: 'Download',
+    focusConfirm: false,
+    preConfirm: () => {
+      const start = document.getElementById('start-date').value;
+      const end = document.getElementById('end-date').value;
+      if (!start || !end) {
+        Swal.showValidationMessage('Silakan isi kedua tanggal!');
+        return false;
+      }
+      return { start, end };
+    }
+  });
+
+  if (!formValues) {
+    console.log("❌ Dibatalkan oleh user.");
+    return;
+  }
+
+  const { start, end } = formValues;
+  console.log(`📅 [2/6] Filter tanggal: ${start} → ${end}`);
+
+  Swal.fire({
+    title: 'Mengambil data...',
+    text: 'Mohon tunggu, sistem sedang mengumpulkan data dari server.',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  let page = 1;
+  let allData = [];
+
+  try {
+    console.log("🚀 [3/6] Mulai ambil data dari API...");
+    while (true) {
+      // 🔥 Update URL API dengan parameter tanggal
+      const url = `${urlapi}start_date=${start}&end_date=${end}`;
+      console.log(`🔍 Fetching halaman ${page} dengan range ${start} → ${end}...`);
+
+      const res = await axios.get(url, {
+        headers: {
+          "Authorization": `Bearer ${API_TOKEN}`
+        }
+      });
+
+      const data = res.data;
+      console.log(`✅ Dapat ${data.tableData?.length || 0} data di halaman ${page}`);
+
+      if (!data.tableData || data.tableData.length === 0) break;
+      allData = [...allData, ...data.tableData];
+
+      if (page >= data.totalPages) {
+        console.log("📖 Semua halaman sudah diambil.");
+        break;
+      }
+      page++;
+    }
+
+    console.log(`📊 Total data diterima dari server: ${allData.length}`);
+
+    // 4️⃣ Konversi ke Excel
+    const ws = XLSX.utils.json_to_sheet(allData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Sales MKI");
+
+    console.log("📁 [5/6] Membuat file Excel...");
+
+    const fileName = `Sales_MKI_${start}_to_${end}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+
+    console.log(`✅ [6/6] File berhasil diunduh: ${fileName}`);
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Berhasil!',
+      text: `Data berhasil diunduh (${allData.length} baris).`,
+      confirmButtonText: 'Tutup'
+    });
+
+  } catch (error) {
+    console.error("❌ Terjadi error:", error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Gagal!',
+      text: 'Terjadi kesalahan saat mengambil data. Coba lagi nanti.'
+    });
+  }
+}
 
 

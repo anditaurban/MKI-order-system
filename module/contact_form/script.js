@@ -89,7 +89,7 @@ async function loadDropdown(selectId, apiUrl, valueField, labelField) {
     .then(async ({ detail }) => {
       console.log(detail);
       const pelangganId = detail.pelanggan_id;
-      document.getElementById('formID').value = pelangganId ? `CUST${pelangganId.toString().padStart(5, '0')}` : '';
+      document.getElementById('formID').value = pelangganId ? `CUS-${pelangganId.toString().padStart(5, '0')}` : '';
       // document.getElementById('formID').value = `${detail.pelanggan_id}` || '';
       document.getElementById('formJoin').value = detail.join_date || '';
       document.getElementById('formNama').value = detail.nama || '';
@@ -197,7 +197,7 @@ async function loadKategoriOptions(Id, selectedIds = []) {
 }
 
 function formatMembershipID(id) {
-  return 'CUST' + id.toString().padStart(5, '0');
+  return 'CUS-' + id.toString().padStart(5, '0');
 }
 
 function getDataPayload() {
@@ -205,11 +205,11 @@ function getDataPayload() {
 
   const payload = {
     owner_id,
+    // no_membership: getVal('formID'),
     no_membership: getVal('formID'),
-    // no_membership: formatMembershipID(rawID),
     join_date: document.getElementById('formJoin').value || '',
-    nama: getVal('formNama'),
-    alias: getVal('formAlias'),
+    nama: getVal('formNama').toUpperCase(),
+    alias: getVal('formAlias').toUpperCase(),
     whatsapp: getVal('formPhone'),
     email: getVal('formEmail'),
     nik: getVal('formNIK'),

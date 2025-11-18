@@ -122,10 +122,21 @@ function loadDropdownCall() {
     <span class="font-medium sm:hidden">No.Faktur</span>  
     ${item.no_inv}
     </td>
+
+    <td class="px-6 py-4 text-sm text-gray-700 border-b sm:border-0 flex justify-between sm:table-cell">
+    <span class="font-medium sm:hidden">No.Faktur</span>  
+    ${item.nama}
+    </td>
+  
+    <td class="px-6 py-4 text-sm text-gray-700 border-b sm:border-0 flex justify-between sm:table-cell">
+      <span class="font-medium sm:hidden">Pelanggan</span>
+      ${item.sales_type}
+    </td>
+  
   
     <td class="px-6 py-4 text-sm text-gray-700 border-b sm:border-0 flex justify-between sm:table-cell">
       <span class="font-medium sm:hidden">Akun</span>
-      ${item.account}
+      ${item.account} ${item.number_account} (${item.owner_account})
     </td>
   
     <td class="px-6 py-4 text-right text-sm text-gray-700 border-b sm:border-0 flex justify-between sm:table-cell">
@@ -135,30 +146,26 @@ function loadDropdownCall() {
   
   
     <td class="px-6 py-4 text-sm text-gray-700 flex justify-between sm:table-cell">
-      <span class="font-medium sm:hidden">Catatan</span>
-      ${item.notes}
-    </td>
-  
-  
-    <td class="px-6 py-4 text-sm text-gray-700 flex justify-between sm:table-cell">
       <span class="font-medium sm:hidden">PIC</span>
-      ${item.pic_name}
+      ${item.pic_name  || ''}
     </td>
   
   
     <td class="px-6 py-4 text-sm text-gray-700 flex justify-between sm:table-cell">
       <span class="font-medium sm:hidden">Status</span>
-      ${item.status}
+      <span class="${getStatusClass(item.status_id)}  px-2 py-1 rounded-full text-xs font-medium">
+        ${item.status}
+      </span> 
     </td>
 
     ${item.status_id != 2 ? `
       <div class="dropdown-menu hidden fixed w-48 bg-white border rounded shadow z-50 text-sm">
   
-      <button onclick="event.stopPropagation(); confirmPayment('${item.receipt_id}', 2);" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
+      <button onclick="event.stopPropagation(); confirmPayment('${item.receipt_id}', 2, '${item.account_id}', '${item.nominal}', '${item.sales_id}');" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
         ✅ Valid
       </button>
 
-      <button onclick="event.stopPropagation(); confirmPayment('${item.receipt_id}', 3);" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
+      <button onclick="event.stopPropagation(); confirmPayment('${item.receipt_id}', 3, '${item.account_id}', '${item.nominal}', '${item.sales_id}');" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
         ❌ Tidak Valid
       </button>
       </div>
@@ -167,10 +174,6 @@ function loadDropdownCall() {
   </tr>`;
   };
   
-  document.getElementById('addButton').addEventListener('click', () => {
-    showFormModal();
-    loadDropdownCall();
-  });
 
   formHtml = `
 <form id="dataform" class="space-y-2">
@@ -205,26 +208,137 @@ requiredFields = [
     { field: 'formDeadline', message: 'Deadline is required!' }
   ];  
 
-async function confirmPayment(receipt_id, status_value) {
-  const { isConfirmed } = await Swal.fire({
-    title: 'Konfirmasi Pembayaran',
-    text: 'Apakah Anda yakin ingin mengonfirmasi pembayaran ini?',
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonText: 'Ya, Konfirmasi',
-    cancelButtonText: 'Batal',
-  });
 
-  if (!isConfirmed) return;
-
+async function confirmPayment(receipt_id, status_value, bank_id, amount, sales_id) {
   try {
+    let selectedBankId = null;
+    let nominalValue = 0;
+
+    // 1. Ambil totalRemainingPayment dari API sales_receipt
+    const resSales = await fetch(`${baseUrl}/list/sales_receipt/${owner_id}/${sales_id}`, {
+      headers: {
+        'Authorization': `Bearer ${API_TOKEN}`
+      }
+    });
+    const salesData = await resSales.json();
+    console.log(salesData);
+  
+    const sales_amount = salesData.totalInvoice || 0;
+    const sales_remaining = salesData.totalRemainingPayment || 0;
+
+    if (!sales_amount) {
+      return Swal.fire('Gagal mengambil data sisa pembayaran.', '', 'error');
+    }
+
+    if (status_value !== 3) {
+      // 2. Ambil data bank
+      const resBank = await fetch(`${baseUrl}/list/finance_account_payment/${owner_id}`, {
+        headers: {
+          'Authorization': `Bearer ${API_TOKEN}`
+        }
+      });
+      const bankData = await resBank.json();
+      const banks = bankData?.listData || [];
+
+      if (banks.length === 0) {
+        return Swal.fire('Tidak ada data bank tersedia.', '', 'warning');
+      }
+
+      const bankOptions = banks.map(bank => {
+        const selected = (bank.account_id == bank_id) ? 'selected' : '';
+        return `<option value="${bank.account_id}" ${selected}>${bank.account} ${bank.number_account} (${bank.owner_account})</option>`;
+      }).join('');
+
+  formHtml = `
+<form id="dataform" class="space-y-2">
+<p>Validasi akun bank & nominal pembayaran:</p>
+  <!-- Project -->
+  <label for="swal-bank" class="block text-sm font-medium text-gray-700 dark:text-gray-200 text-left">Project</label>
+  <select id="swal-bank" name="pesanan_id" class="form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <option value="">-- Pilih Bank --</option>
+    ${bankOptions}
+  </select>
+
+  <!-- Starting -->
+  <label for="swal-nominal" class="block text-sm font-medium text-gray-700 dark:text-gray-200 text-left">Starting</label>
+  <input id="swal-nominal" name="start_date" value="${finance(amount)}" type="text" class="form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+  <p style="margin-top: 8px; font-size: 14px;">💡 <b>Total Invoice:</b> Rp ${finance(sales_amount)}</p>
+  <p style="margin-top: 8px; font-size: 14px;">💡 <b>Total Belum bayar:</b> Rp ${finance(sales_remaining)}</p>
+</form>
+
+  `
+
+      const { isConfirmed, value } = await Swal.fire({
+        title: 'Konfirmasi Pembayaran',
+        html: formHtml,
+        didOpen: () => {
+          const nominalInput = document.getElementById('swal-nominal');
+          nominalInput.addEventListener('input', function () {
+            const angka = this.value.replace(/\D/g, '');
+            this.value = finance(angka);
+          });
+        },
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Konfirmasi',
+        cancelButtonText: 'Batal',
+        preConfirm: () => {
+          const selected = document.getElementById('swal-bank').value;
+          const nominalFormatted = document.getElementById('swal-nominal').value;
+          const nominal = parseInt(nominalFormatted.replace(/\D/g, ''));
+
+          if (!selected) {
+            Swal.showValidationMessage('Silakan pilih bank terlebih dahulu');
+          } else if (isNaN(nominal) || nominal <= 0) {
+            Swal.showValidationMessage('Nominal pembayaran tidak valid');
+          } else if (nominal > sales_remaining) {
+            Swal.showValidationMessage(`Nominal tidak boleh lebih dari Rp ${finance(sales_remaining)}`);
+          }
+
+          return { selectedBankId: selected, nominal };
+        }
+      });
+
+      if (!isConfirmed || !value) return;
+
+      selectedBankId = value.selectedBankId;
+      nominalValue = value.nominal;
+
+    } else {
+      // Jika status 3 (batal)
+      const { isConfirmed } = await Swal.fire({
+        title: 'Konfirmasi Pembatalan Pembayaran',
+        text: 'Apakah Anda yakin ingin membatalkan pembayaran ini?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Batalkan',
+        cancelButtonText: 'Batal',
+      });
+      if (!isConfirmed) return;
+    }
+
+    // 3. Siapkan payload
+    const body = {
+      status_id: status_value,
+      user_id: user_id,
+    };
+
+    if (status_value !== 3) {
+      body.account_id = selectedBankId;
+      body.nominal = nominalValue;
+    } else {
+      body.account_id = bank_id;
+      body.nominal = amount;
+    }
+
+    // 4. Kirim ke API
     const response = await fetch(`${baseUrl}/update/sales_receipt_status/${receipt_id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${API_TOKEN}`
       },
-      body: JSON.stringify({ status_id: status_value, user_id: user_id})
+      body: JSON.stringify(body)
     });
 
     const result = await response.json();
@@ -237,18 +351,22 @@ async function confirmPayment(receipt_id, status_value) {
         timer: 2000,
         showConfirmButton: false,
       });
-    fetchAndUpdateData();
+      fetchAndUpdateData();
     } else {
       throw new Error(result.data?.message || 'Gagal memperbarui status');
     }
+
   } catch (error) {
     Swal.fire({
       title: 'Gagal',
       text: error.message,
       icon: 'error',
     });
+    fetchAndUpdateData();
   }
 }
+
+
 
 
 

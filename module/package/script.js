@@ -25,6 +25,16 @@ window.rowTemplate = function (item, index, perPage = 10) {
     ${item.no_inv}
     </td>
   
+     <td class="px-6 py-4 text-sm text-gray-700 border-b sm:border-0 flex justify-between sm:table-cell">
+    <span class="font-medium sm:hidden">Pelanggan</span>  
+    ${item.nama}
+    </td>
+  
+    <td class="px-6 py-4 text-sm text-gray-700 border-b sm:border-0 flex justify-between sm:table-cell">
+      <span class="font-medium sm:hidden">Pelanggan</span>
+      ${item.sales_type}
+    </td>
+  
      <td class="px-6 py-4 text-sm text-right text-gray-700 border-b sm:border-0 flex justify-between sm:table-cell">
     <span class="font-medium sm:hidden">Qty</span>  
     ${item.total_items}
@@ -37,14 +47,18 @@ window.rowTemplate = function (item, index, perPage = 10) {
   
      <td class="px-6 py-4 text-sm text-gray-700 border-b sm:border-0 flex justify-between sm:table-cell">
     <span class="font-medium sm:hidden">PIC</span>  
-    ${item.pic_name}
+    ${item.pic_name || ''}
     </td>
   
     <td class="px-6 py-4 text-sm text-gray-700 flex justify-between sm:table-cell">
       <span class="font-medium sm:hidden">Status</span>
-      ${item.status}         
+      <span class="${getStatusClass(item.status_id)}  px-2 py-1 rounded-full text-xs font-medium">
+        ${item.status}
+      </span>      
     </td>
-          <div class="dropdown-menu hidden fixed w-48 bg-white border rounded shadow z-50 text-sm">
+    
+${![2, 4].includes(item.status_id) ? `    
+    <div class="dropdown-menu hidden fixed w-48 bg-white border rounded shadow z-50 text-sm">
    ${item.status_id === 1 ? `
       <button onclick="event.stopPropagation(); updatePackageStatus('${item.package_id}');" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
         📦 Process Packing
@@ -60,59 +74,90 @@ window.rowTemplate = function (item, index, perPage = 10) {
         🚚 Process Shipping
       </button>
        ` : ''}
+
+       <button onclick="event.stopPropagation(); loadModuleContent('package_form', '${item.package_id}');" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
+        🔄 Update Packing
+       </button>
       </div>
+ ` : ''}
   </tr>`;
 };
 
 async function updatePackageStatus(package_id) {
-    const { value: pic_name } = await Swal.fire({
-      title: 'Input Nama PIC',
-      input: 'text',
-      inputLabel: 'Nama Karyaman yang memproses',
-      inputPlaceholder: 'Contoh: Ujang',
+  try {
+    // ambil data packageman
+    const resPackageman = await fetch(`${baseUrl}/list/packageman/${owner_id}`, {
+      headers: {
+        Authorization: `Bearer ${API_TOKEN}`
+      }
+    });
+    const dataPackageman = await resPackageman.json();
+
+    if (!dataPackageman.listData || dataPackageman.listData.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Tidak ada data',
+        text: 'Data packageman belum tersedia.'
+      });
+      return;
+    }
+
+    // mapping ke format { value: 'nama', text: 'nama (role)' }
+    const options = {};
+    dataPackageman.listData.forEach(pm => {
+      options[pm.packageman_id] = `${pm.name} (${pm.role})`;
+    });
+
+    // tampilkan swal dengan select
+    const { value: packageman_id } = await Swal.fire({
+      title: 'Pilih PIC',
+      input: 'select',
+      inputOptions: options,
+      inputPlaceholder: 'Pilih karyawan',
       showCancelButton: true,
       confirmButtonText: 'Update Status',
       inputValidator: (value) => {
         if (!value) {
-          return 'Nama PIC wajib diisi!';
+          return 'PIC wajib dipilih!';
         }
       }
     });
 
-    if (!pic_name) return;
+    if (!packageman_id) return;
 
-    try {
-      const res = await fetch(`${baseUrl}/update/sales_package_status/${package_id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${API_TOKEN}`
-        },
-        body: JSON.stringify({
-          pic_name,
-          status_id: 5
-        })
-      });
+    // kirim update
+    const res = await fetch(`${baseUrl}/update/sales_package_status/${package_id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${API_TOKEN}`
+      },
+      body: JSON.stringify({
+        packageman_id,
+        status_id: 5
+      })
+    });
 
-      const result = await res.json();
-      if (res.ok) {
-        Swal.fire({
-          icon: 'success',
-          title: 'Berhasil!',
-          text: 'Status paket berhasil diperbarui.'
-        });
-        fetchAndUpdateData();
-      } else {
-        throw new Error(result.message || 'Gagal memperbarui status.');
-      }
-    } catch (error) {
+    const result = await res.json();
+    if (res.ok) {
       Swal.fire({
-        icon: 'error',
-        title: 'Gagal',
-        text: error.message
+        icon: 'success',
+        title: 'Berhasil!',
+        text: 'Status paket berhasil diperbarui.'
       });
+      fetchAndUpdateData();
+    } else {
+      throw new Error(result.message || 'Gagal memperbarui status.');
     }
+  } catch (error) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Gagal',
+      text: error.message
+    });
   }
+}
+
 
 async function printPackingList(package_id) {
   try {
@@ -133,6 +178,7 @@ async function printPackingList(package_id) {
       text: 'Pilih metode pencetakan:',
       icon: 'question',
       showCancelButton: true,
+      showConfirmButton: false,
       confirmButtonText: 'Download PDF',
       cancelButtonText: 'Print Langsung',
       reverseButtons: true

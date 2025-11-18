@@ -9,10 +9,15 @@ if (window.detail_id) {
   // Mode update
   loadDetail(detail_id);
   document.getElementById('addButton').classList.add('hidden');
+
+  printButton = document.getElementById('printButton');
+  printButton.classList.remove('hidden');
+  printButton.setAttribute('onclick', `printData(${window.detail_id})`);
 }else {
   // Mode tambah
+  restoreFormFromLocal();
   document.getElementById('updateButton').classList.add('hidden');
-  loadDropdown('formCategory', `${baseUrl}/list/product_category/${owner_id}`, 'business_category_id', 'business_category');
+  // loadDropdown('formCategory', `${baseUrl}/list/business_category/${owner_id}`, 'business_category_id', 'business_category');
 
 
 }
@@ -80,7 +85,7 @@ async function loadDetail(Id) {
     document.getElementById('formPrice').value = detail.sale_price?.toLocaleString('id-ID') || '';
     document.getElementById('formCategory').value = detail.business_category_id || '';
     document.getElementById('formDescription').value = detail.description || '';
-    document.getElementById('formStatus').checked = detail.status_id === 1;
+    // document.getElementById('formStatus').checked = detail.status_id === 1;
 
     // Render detail item ke tabel
   const tbody = document.getElementById("tabelItem");
@@ -105,6 +110,51 @@ async function loadDetail(Id) {
 
   } catch (err) {
     console.error('Gagal load detail:', err);
+  }
+}
+
+async function restoreFormFromLocal() {
+  await loadDropdown('formCategory', `${baseUrl}/list/business_category/${owner_id}`, 'business_category_id', 'business_category');
+  const draft = localStorage.getItem('draft_bundling_form');
+  if (!draft) return;
+
+  try {
+    const detail = JSON.parse(draft);
+    console.log('Memuat draft bundling dari localStorage:', detail);
+
+    // Isi form utama
+    document.getElementById('formSKU').value = detail.productcode || '';
+    document.getElementById('formProduct').value = detail.product || '';
+    document.getElementById('formCogs').value = detail.cogs?.toLocaleString('id-ID') || '';
+    document.getElementById('formPrice').value = detail.sale_price?.toLocaleString('id-ID') || '';
+    document.getElementById('formCategory').value = detail.business_category_id || '';
+    document.getElementById('formDescription').value = detail.description || '';
+    // document.getElementById('formStatus').checked = detail.status_id === 1;
+
+    // Render ulang item_detail
+    const tbody = document.getElementById('tabelItem');
+    tbody.innerHTML = ''; // Kosongkan isi tabel
+
+    (detail.item_detail || []).forEach(item => {
+      tambahItem(); // Fungsi yang menambahkan 1 baris kosong
+      
+
+      const row = tbody.lastElementChild;
+      row.querySelector('.searchProduk').value = item.item_name || '';
+      row.querySelector('.itemNama').value = item.item_id || '';
+      row.querySelector('.itemQty').value = item.qty || 1;
+      row.querySelector('.itemBerat').innerText = (item.weight || 0).toLocaleString('id-ID');
+      row.querySelector('.itemHarga').value = (item.cogs || 0).toLocaleString('id-ID');
+
+      const select = row.querySelector('.itemNama');
+      const match = Array.from(select.options).find(o => o.value == item.item_id);
+      if (match) select.value = match.value;
+    });
+
+    recalculateTotal(); // Hitung ulang total dari tabel
+
+  } catch (error) {
+    console.error('Gagal restore form dari draft:', error);
   }
 }
 
@@ -182,7 +232,7 @@ async function loadProdukList() {
   console.log(res);
 }
 
-  function tambahItem() {
+function tambahItem() {
   const tbody = document.getElementById("tabelItem");
   const rowCount = tbody.rows.length;
   const row = document.createElement("tr");
@@ -191,14 +241,14 @@ async function loadProdukList() {
     <td class="px-3 py-2 border">
       <input type="text" placeholder="Cari Produk..." class="w-full border rounded px-2 mb-1 searchProduk" oninput="filterProdukDropdownCustom(this)" />
       <div class="produkDropdown hidden border bg-white shadow rounded max-h-40 overflow-y-auto z-50 absolute w-48"></div>
-      <select class="itemNama hidden">
+      <select class="hidden itemNama">
         <option value="" disabled selected>-- pilih produk --</option>
         ${produkList.map(p => `<option value="${p.product_id}" data-harga="${p.cogs}" data-nama="${p.product}">${p.product}</option>`).join('')}
       </select>
     </td>
     <td class="px-3 py-2 border text-right"><input type="number" class="w-full border rounded px-2 text-right itemQty" value="1" oninput="recalculateTotal()" /></td>
     <td class="px-3 py-2 border text-right"><input type="text" class="w-full border rounded px-2 text-right itemHarga" oninput="recalculateTotal()" /></td>
-    <td class="px-3 py-2 border text-right itemBerat hidden">0</td>
+    <td class="px-3 py-2 border text-right itemBerat">0</td>
     <td class="px-3 py-2 border text-right itemSubtotal">0</td>
     
     <td class="px-3 py-2 border text-center">
@@ -241,7 +291,6 @@ function filterProdukDropdownCustom(inputEl) {
 }
 
 function recalculateTotal() {
-  console.log('hitung');
   const rows = document.querySelectorAll('#tabelItem tr');
   let subtotal = 0;
   let weight = 0;
@@ -260,6 +309,15 @@ function recalculateTotal() {
   document.getElementById('total').innerText = `${total.toLocaleString('id-ID')}`;
   document.getElementById('totalItem').innerText = `${totalItem.toLocaleString('id-ID')} item`;
   document.getElementById('totalBerat').innerText = `${weight.toLocaleString('id-ID')} gr`;
+  
+  if (!window.detail_id){
+    saveFormToLocal();
+    console.log('save to local');
+  }else{
+    autoSaveData();
+    console.log('update to server');
+  }
+  
 }
 
 function getDataPayload() {
@@ -268,27 +326,32 @@ function getDataPayload() {
 
   const rows = document.querySelectorAll('#tabelItem tr');
     const item_detail = Array.from(rows).map(row => {
-      const select = row.querySelector('.itemNama');
+      const product_id = row.querySelector('.itemNama')?.value || '';
+      const name = row.querySelector('.searchProduk')?.value || '';
+      const weight = parseInt((row.querySelector('.itemBerat')?.innerText || '0').replace(/\./g, ''));
       const qty = parseInt(row.querySelector('.itemQty').value || 0);
+      const cogs = parseInt((row.querySelector('.itemHarga').value || '0').replace(/\./g, ''));
       return {
-        item_id: parseInt(select.value),
+        item_id: product_id,
+        item_name: name,
+        weight: weight,
         qty: qty,
+        cogs: cogs
       };
     });
-
   const payload = {
     owner_id,
     business_category_id: getVal('formCategory'),
-    status_id: 1,
+    // status_id: 1,
     productcode: getVal('formSKU'),
-    product: getVal('formProduct'),
+    product: getVal('formProduct').toUpperCase(),
     cogs: getInt('formCogs'),
     sale_price: getInt('formPrice'),
     description: getVal('formDescription'),
     item_detail
   };
 
-  console.log (payload);
+  // console.log (payload);
 
   // Validasi wajib
   if (!payload.productcode || !payload.product || !payload.cogs || !payload.sale_price) {
@@ -322,6 +385,12 @@ function getDataPayload() {
   return payload;
 }
 
+function saveFormToLocal() {
+  const payload = getDataPayload();
+  if (!payload) return;
+  localStorage.setItem('draft_bundling_form', JSON.stringify(payload));
+}
+
 async function submitData(method, id = '') {
   const payload = getDataPayload();
   if (!payload) return;
@@ -347,6 +416,7 @@ async function submitData(method, id = '') {
         title: 'Berhasil',
         text: `Produk berhasil ${actionText}`
       });
+      localStorage.removeItem('draft_bundling_form');
       loadModuleContent('bundling');
     } else {
       throw new Error(result.message || `Gagal ${actionText} produk`);
@@ -361,14 +431,103 @@ async function submitData(method, id = '') {
   }
 }
 
-async function createData() {
-  await submitData('POST');
-}
-
 async function updateData() {
   await submitData('PUT', detail_id);
 }
 
+async function createData() {
+  await submitData('POST');
+}
+
+async function printData(product_id) {
+  try {
+    const response = await fetch(`${baseUrl}/detail/product_bundling/${product_id}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${API_TOKEN}`
+      }
+    });
+
+    const result = await response.json();
+    const detail = result?.detail;
+
+    if (!detail) throw new Error('Data produk bundling tidak ditemukan');
+
+    // Tampilkan pilihan ke user
+    const { isConfirmed, dismiss } = await Swal.fire({
+      title: 'Cetak Data Produk',
+      text: 'Pilih metode pencetakan:',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Download PDF',
+      cancelButtonText: 'Print Langsung',
+      reverseButtons: true
+    });
+
+    const url = `print_product_bundling.html?ids=${product_id}`;
+
+    if (isConfirmed) {
+      // === Download PDF (pakai iframe) ===
+      Swal.fire({
+        title: 'Menyiapkan PDF...',
+        html: 'File akan diunduh otomatis.',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+          Swal.showLoading();
+
+          const iframe = document.createElement('iframe');
+          iframe.src = `${url}&mode=download`;
+          iframe.style.width = '0';
+          iframe.style.height = '0';
+          iframe.style.border = 'none';
+          document.body.appendChild(iframe);
+
+          setTimeout(() => {
+            Swal.close();
+            Swal.fire('Berhasil', 'Data berhasil diunduh.', 'success');
+          }, 3000);
+        }
+      });
+
+    } else if (dismiss === Swal.DismissReason.cancel) {
+      // === Print langsung (open tab) ===
+      window.open(url, '_blank');
+    }
+
+  } catch (error) {
+    Swal.fire({
+      title: 'Gagal',
+      text: error.message,
+      icon: 'error'
+    });
+  }
+}
+
+async function autoSaveData() {
+  const payload = getDataPayload();
+  if (!payload) return;
+
+  const url = `${baseUrl}/update/product_bundling/${detail_id}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${API_TOKEN}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const result = await response.json();
+      console.error('Auto save gagal:', result.message || 'Unknown error');
+    }
+  } catch (error) {
+    console.error('Auto save error:', error);
+  }
+}
 
 
 

@@ -39,17 +39,17 @@ async function fillFormData(data) {
 
   // Pastikan value bertipe string
   const roleValue = data.role || '';
-  const levelValue = data.level || '';
+//   const levelValue = data.level || '';
 
   // Tunggu sampai option-nya ada
   await waitForOption('formRole', roleValue);
-  await waitForOption('formLevel', levelValue);
+//   await waitForOption('formLevel', levelValue);
 
   // Set nilai ke form
   const formRole = document.getElementById('formRole');
-  const formLevel = document.getElementById('formLevel');
+//   const formLevel = document.getElementById('formLevel');
   formRole.value = roleValue;
-  formLevel.value = levelValue;
+//   formLevel.value = levelValue;
 
   document.getElementById('formName').value = data.name || '';
   document.getElementById('formPhone').value = String(data.wa_login || '');
@@ -119,18 +119,13 @@ function loadDropdownCall() {
       <span class="font-medium sm:hidden">Email</span>
       ${item.wa_login}
     </td>
-  
-    <td class="px-6 py-4 text-sm text-gray-700 border-b sm:border-0 flex justify-between sm:table-cell">
-      <span class="font-medium sm:hidden">Email</span>
-      ${item.role}
-    </td>
-  
-  
+ 
+
     <td class="px-6 py-4 text-sm text-gray-700 flex justify-between sm:table-cell">
       <span class="font-medium sm:hidden">Role</span>
-      ${item.level}
+      ${item.role}
       <div class="dropdown-menu hidden fixed w-48 bg-white border rounded shadow z-50 text-sm">
-       <button onclick="event.stopPropagation(); handleEdit(${item.user_id}, '${item.name}', 'quotation')" class="block w-full text-left px-4 py-2 hover:bg-gray-100">✏️ Edit User</button>
+       <button onclick="event.stopPropagation(); handleEdit(${item.user_id}, '${item.name.replace(/'/g, "\\'")}')" class="block w-full text-left px-4 py-2 hover:bg-gray-100">✏️ Edit User</button>
         <button onclick="event.stopPropagation(); handleDelete(${item.user_id})" class="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600">
           🗑 Delete User
         </button>
@@ -166,20 +161,12 @@ function loadDropdownCall() {
   <label for="formRole" class="block text-sm font-medium text-gray-700 dark:text-gray-200 text-left">Role</label>
   <select id="formRole" name="role" class="form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
     <option value="">Pilih Role</option>
-    <option value="Superadmin">Super Admin</option>
+    <option value="superadmin">Super Admin</option>
     <option value="sales">Sales</option>
     <option value="finance">Finance</option>
-    <option value="packed">Packing</option>
-    <option value="shipped">Shipping</option>
+    <option value="packing">Packing</option>
+    <option value="shipping">Shipping</option>
     <option value="viewer">Viewer</option>
-  </select>
-
-  <label for="formLevel" class="block text-sm font-medium text-gray-700 dark:text-gray-200 text-left">Level</label>
-  <select id="formLevel" name="level" class="form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-    <option value="">Pilih Level</option>
-    <option value="owner">Business Owner</option>
-    <option value="manager">Manager</option>
-    <option value="staf">Staff</option>
   </select>
 
 </form>

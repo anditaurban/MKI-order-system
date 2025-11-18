@@ -1,11 +1,11 @@
 <div class="bg-white p-6">
-  <section class="section space-y-6">
-    
+  <section class="space-y-6">
+
     <!-- Header -->
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div>
         <h1 id="formTitle" class="text-2xl font-bold mb-1">FORM INPUT PRODUK KEMITRAAN</h1>
-        <nav class="text-gray-500 text-sm flex items-center flex-wrap gap-1">
+        <nav class="text-sm text-gray-500 flex items-center flex-wrap gap-1">
           <span>Home</span>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -21,24 +21,17 @@
       <div class="flex flex-wrap gap-2">
         <button onclick="createData()" id="addButton" class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded">Simpan</button>
         <button onclick="updateData()" id="updateButton" class="bg-yellow-600 hover:bg-yellow-700 text-white text-sm px-4 py-2 rounded">Update</button>
-        <button onclick="loadModuleContent('product')" class="bg-gray-300 text-sm px-4 py-2 rounded">⬅️ Kembali</button>
+        <button onclick="printData()" id="printButton" class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded hidden">Export</button>
+        <button onclick="loadModuleContent('bundling')" class="bg-gray-300 text-sm px-4 py-2 rounded">⬅️ Kembali</button>
       </div>
     </div>
 
     <!-- Tab Navigation -->
     <div class="flex gap-2 border-b border-gray-300">
-      <button 
-        class="tab-link active-tab text-sm flex items-center gap-2 py-1 px-3 bg-blue-100 hover:bg-blue-200 rounded-t-md text-blue-600 font-semibold"
-        data-tab="produk"
-        onclick="switchTab('produk')"
-      >
+      <button class="tab-link active-tab text-sm flex items-center gap-2 py-1 px-3 bg-blue-100 hover:bg-blue-200 rounded-t-md text-blue-600 font-semibold" data-tab="produk" onclick="switchTab('produk')">
         ⬇️ <span class="menu-text hidden md:inline">Data Produk</span>
       </button>
-      <button 
-        class="tab-link text-sm flex items-center gap-2 py-1 px-3 hover:bg-blue-200 rounded-t-md text-gray-600"
-        data-tab="detail"
-        onclick="switchTab('detail')"
-      >
+      <button class="tab-link text-sm flex items-center gap-2 py-1 px-3 hover:bg-blue-200 rounded-t-md text-gray-600" data-tab="detail" onclick="switchTab('detail')">
         ⬆️ <span class="menu-text hidden md:inline">Detail Item</span>
       </button>
     </div>
@@ -76,7 +69,7 @@
               <input type="text" id="formDescription" class="flex-1 border rounded px-3 py-2" />
             </div>
 
-            <div class="mb-4 flex items-center">
+            <!-- <div class="mb-4 flex items-center">
               <label class="w-40 font-medium">Status <span class="text-red-500">*</span></label>
               <div class="flex items-center gap-2 flex-1">
                 <label class="inline-flex items-center cursor-pointer">
@@ -86,7 +79,7 @@
                   </div>
                 </label>
               </div>
-            </div>
+            </div> -->
           </div>
 
           <!-- Kanan -->
@@ -124,11 +117,11 @@
               <table class="w-full text-sm">
                 <thead class="bg-gray-100">
                   <tr>
-                <th class="px-3 py-2 border text-left">Produk</th>
-                <th class="px-3 py-2 border text-right">Qty</th>
-                <th class="px-3 py-2 border text-right">Harga</th>
-                <th class="px-3 py-2 border text-right">Subtotal</th>
-                <th class="px-3 py-2 border text-center">Aksi</th>
+                    <th class="px-3 py-2 border text-left">Produk</th>
+                    <th class="px-3 py-2 w-[15%] border text-right">Qty</th>
+                    <th class="px-3 py-2 w-[15%] border text-right">Harga</th>
+                    <th class="px-3 py-2 w-[15%] border text-right">Subtotal</th>
+                    <th class="px-3 py-2 w-[10%] border text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody id="tabelItem" class="bg-white"></tbody>
@@ -151,6 +144,5 @@
       </div>
 
     </div>
-
   </section>
 </div>

@@ -5,9 +5,11 @@ pagemoduleparent = 'sales'
   loadCustomerList();
   formatNumberInputs();
   loadCourierList();
+  loadTypeOrder();
+  loadEmployeeList() 
 
   if (window.detail_id && window.detail_desc){
-    loadProdukList(window.detail2_desc);
+    // loadProdukList(window.detail2_desc);
     loadDetailSales(detail_id, detail_desc)
     loadPaymentDetail(detail_id, 0)
     formatNumberInputs();
@@ -32,7 +34,30 @@ async function loadProdukList(customer_id) {
   });
   const json = await res.json();
   produkList = json.listData || [];
-  console.log(res);
+}
+
+async function loadEmployeeList() {
+  try {
+    const res = await fetch(`${baseUrl}/list/salesman/${owner_id}`, {
+      headers: { Authorization: `Bearer ${API_TOKEN}` }
+    });
+    const json = await res.json();
+    const employeeList = json.listData || [];
+
+    console.log(employeeList);
+
+    const select = document.getElementById("salesman");
+    select.innerHTML = '<option value="">-- Pilih Sales --</option>';
+
+    employeeList.forEach(emp => {
+      const option = document.createElement("option");
+      option.value = emp.salesman_id;
+      option.textContent = emp.name;
+      select.appendChild(option);
+    });
+  } catch (err) {
+    console.error("Gagal memuat data karyawan:", err);
+  }
 }
 
 function filterKlienSuggestions() {
@@ -65,7 +90,6 @@ function tambahItem() {
   const tbody = document.getElementById("tabelItem");
   const row = document.createElement("tr");
   row.innerHTML = `
-    <td class="px-3 py-2 border text-center">•</td>
     <td class="px-3 py-2 border">
       <input type="text" placeholder="Cari Produk..." class="w-full border rounded px-2 mb-1 searchProduk" oninput="filterProdukDropdownCustom(this)" />
       <div class="produkDropdown hidden border bg-white shadow rounded max-h-40 overflow-y-auto z-50 absolute w-48"></div>
@@ -133,12 +157,14 @@ function recalculateTotal() {
     row.querySelector('.itemSubtotal').innerText = `${sub.toLocaleString('id-ID')}`;
   });
   const diskon = parseInt(document.getElementById('inputDiskon').value.replace(/[^\d]/g, '') || 0);
+  const mp_admin = parseInt(document.getElementById('inputmp_admin').value.replace(/[^\d]/g, '') || 0);
   const shipping = parseInt(document.getElementById('inputShipping').value.replace(/[^\d]/g, '') || 0);
   const pajak = Math.round(0 * subtotal);
-  const total = subtotal - diskon + pajak + shipping;
+  const total = subtotal - diskon + pajak + shipping + mp_admin;
   document.getElementById('subtotal').innerText = `${subtotal.toLocaleString('id-ID')}`;
   document.getElementById('diskon').innerText = `${diskon.toLocaleString('id-ID')}`;
   document.getElementById('pajak').innerText = `${pajak.toLocaleString('id-ID')}`;
+  document.getElementById('mp_admin').innerText = `${mp_admin.toLocaleString('id-ID')}`;
   document.getElementById('ongkir').innerText = `${shipping.toLocaleString('id-ID')}`;
   document.getElementById('total').innerText = `${total.toLocaleString('id-ID')}`;
   document.getElementById('totalBerat').innerText = `${weight.toLocaleString('id-ID')} gr`;
@@ -153,7 +179,7 @@ function setTodayDate() {
 }
 
 function formatNumberInputs() {
-  document.querySelectorAll('.itemHarga, #inputDiskon, #inputShipping').forEach(input => {
+  document.querySelectorAll('.itemHarga, #inputDiskon, #inputShipping, #inputmp_admin').forEach(input => {
     input.addEventListener('input', () => {
       const raw = input.value.replace(/[^\d]/g, '');
       if (!raw) {
@@ -185,22 +211,35 @@ async function submitInvoice() {
     const subtotal = sales_detail.reduce((total, item) => total + (item.sale_price * item.quantity), 0);
     const discount = parseInt(document.getElementById('inputDiskon').value.replace(/[^\d]/g, '') || 0);
     const shipping = parseInt(document.getElementById('inputShipping').value.replace(/[^\d]/g, '') || 0);
+    const mp_admin = parseInt(document.getElementById('inputmp_admin').value.replace(/[^\d]/g, '') || 0);
     const tax = Math.round(0 * subtotal);
     const courier_id = parseInt(document.getElementById('selectCourier').value || 0);
+    const salesman_id = parseInt(document.getElementById('salesman').value || 0);
     const courier_note = document.getElementById('courierNote').value;
+    const type_id = parseInt(document.getElementById('selectType').value || 0);
+    const catatan = document.getElementById('catatan').value;
+    const syaratketentuan = document.getElementById('syaratketentuan').value;
+    const termpayment = document.getElementById('termpayment').value;
 
     const body = {
       owner_id,
       user_id,
       date: document.getElementById('tanggal').value,
       customer_id: parseInt(document.getElementById('klien_id').value),
+      salesman_id: salesman_id,
       discount_nominal: discount,
       tax_percent: 0,
       tax: tax,
       shipping: shipping,
+      mp_admin: mp_admin,
       sales_detail,
       courier_id: courier_id,
-      courier_note: courier_note
+      courier_note: courier_note,
+      type_id: type_id, 
+      catatan: catatan, 
+      syaratketentuan: syaratketentuan, 
+      termpayment: termpayment
+
     };
 
     console.log(body);
@@ -258,18 +297,34 @@ async function updateInvoice() {
     const subtotal = sales_detail.reduce((total, item) => total + (item.sale_price * item.quantity), 0);
     const discount = parseInt(document.getElementById('inputDiskon').value.replace(/[^\d]/g, '') || 0);
     const shipping = parseInt(document.getElementById('inputShipping').value.replace(/[^\d]/g, '') || 0);
+    const mp_admin = parseInt(document.getElementById('inputmp_admin').value.replace(/[^\d]/g, '') || 0);
     const tax = Math.round(0 * subtotal);
+    const courier_id = parseInt(document.getElementById('selectCourier').value || 0);
+    const salesman_id = parseInt(document.getElementById('salesman').value || 0);
+    const courier_note = document.getElementById('courierNote').value;
+    const type_id = parseInt(document.getElementById('selectType').value || 0);
+    const catatan = document.getElementById('catatan').value;
+    const syaratketentuan = document.getElementById('syaratketentuan').value;
+    const termpayment = document.getElementById('termpayment').value;
 
     const body = {
       owner_id,
       user_id,
       date: document.getElementById('tanggal').value,
       customer_id: parseInt(document.getElementById('klien_id').value),
+      salesman_id: salesman_id,
       discount_nominal: discount,
       tax_percent: 0,
       tax: tax,
       shipping: shipping,
-      sales_detail
+      mp_admin: mp_admin,
+      sales_detail,
+      courier_id: courier_id,
+      courier_note: courier_note,
+      type_id: type_id, 
+      catatan: catatan, 
+      syaratketentuan: syaratketentuan, 
+      termpayment: termpayment
     };
 
     console.log(body);
@@ -284,6 +339,7 @@ async function updateInvoice() {
     });
 
     const json = await res.json();
+console.log("OUTPUT = ", json);
 
     if (res.ok) {
       Swal.fire('Sukses', '✅ Data penjualan berhasil diperbarui.', 'success');
@@ -323,6 +379,33 @@ async function loadCourierList() {
   }
 }
 
+async function loadTypeOrder() {
+  try {
+    const res = await fetch(`${baseUrl}/list/sales_type/${owner_id}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${API_TOKEN}`
+      }
+    });
+
+    const result = await res.json();
+    const list = result.listData || [];
+    console.log('sales type : ', list);
+
+    const courierSelect = document.getElementById('selectType');
+    courierSelect.innerHTML = '<option value="">-- Pilih Type Penjualan --</option>';
+
+    list.forEach(sales => {
+      const option = document.createElement('option');
+      option.value = sales.type_id; // atau courier.id jika ingin ID
+      option.textContent = sales.sales_type;
+      courierSelect.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Gagal memuat daftar kurir:', error);
+  }
+}
+
   function handleCourierChange() {
     const selected = document.getElementById('selectCourier').value;
     console.log('Kurir dipilih:', selected);
@@ -338,7 +421,11 @@ function loadDetailSales(Id, Detail) {
   })
     .then(res => res.json())
     .then(({ detail }) => {
-      document.getElementById('formTitle').innerText = `Edit ${detail_desc}`;
+      // Pastikan loadProdukList selesai dulu
+      return loadProdukList(detail.customer_id).then(() => detail);
+      })    
+    .then((detail) => {
+      document.getElementById('formTitle').innerText = `UPDATE FAKTUR ${detail_desc}`;
       document.getElementById('tanggal').value = formatDateForInput(detail.date);
       document.getElementById('klien').value = detail.customer;
       document.getElementById('no_hp').value = detail.whatsapp;
@@ -348,10 +435,16 @@ function loadDetailSales(Id, Detail) {
       document.getElementById('klien_id').value = detail.customer_id || '';
       document.getElementById('inputDiskon').value = detail.discount_nominal.toLocaleString('id-ID');
       document.getElementById('inputShipping').value = detail.shipping.toLocaleString('id-ID');
+      document.getElementById('inputmp_admin').value = detail.mp_admin.toLocaleString('id-ID');
       document.getElementById('statusPackage').innerText = detail.status_package || '-';
       document.getElementById('statusShipment').innerText = detail.status_shipment || '-';
       document.getElementById('selectCourier').value = detail.courier_id;
       document.getElementById('courierNote').value = detail.courier_note;
+      document.getElementById('salesman').value = detail.salesman_id;
+      document.getElementById('selectType').value = detail.type_id;
+      document.getElementById('catatan').value = detail.catatan;
+      document.getElementById('syaratketentuan').value = detail.syaratketentuan;
+      document.getElementById('termpayment').value = detail.termpayment;
       console.log(detail);
 
 
@@ -465,7 +558,7 @@ async function printInvoice(invoice_id) {
     });
 
     if (isConfirmed) {
-      const url = `faktur_print.html?id=${invoice_id}`;
+      const url = `print_faktur.html?id=${invoice_id}`;
       // === Download PDF (via packing_print.html di iframe) ===
       Swal.fire({
         title: 'Menyiapkan PDF...',
@@ -493,7 +586,7 @@ async function printInvoice(invoice_id) {
 
     } else if (dismiss === Swal.DismissReason.cancel) {
       // === Print Langsung (open tab) ===
-      window.open(`faktur_print.html?id=${invoice_id}`, '_blank');
+      window.open(`print_faktur.html?id=${invoice_id}`, '_blank');
     }
 
   } catch (error) {
@@ -518,7 +611,7 @@ async function sendWhatsAppInvoice() {
 
     // Cari nomor WA dari customerList
     const klien = customerList.find(c => c.pelanggan_id == detail.customer_id);
-    const wa = klien?.whatsapp?.replace(/\D/g, '');
+    const wa = klien?.whatsapp?.replace(/\D/g, '').replace(/^0/, '62');
     if (!wa) return alert('❌ Nomor WhatsApp klien tidak ditemukan.');
 
     // Format daftar produk

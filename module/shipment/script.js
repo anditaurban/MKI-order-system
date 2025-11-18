@@ -122,6 +122,16 @@ function loadDropdownCall() {
     </td>
   
     <td class="px-6 py-4 text-sm text-gray-700 border-b sm:border-0 flex justify-between sm:table-cell">
+      <span class="font-medium sm:hidden">Pelanggan</span>
+      ${item.nama}
+    </td>
+  
+    <td class="px-6 py-4 text-sm text-gray-700 border-b sm:border-0 flex justify-between sm:table-cell">
+      <span class="font-medium sm:hidden">Pelanggan</span>
+      ${item.sales_type}
+    </td>
+  
+    <td class="px-6 py-4 text-sm text-gray-700 border-b sm:border-0 flex justify-between sm:table-cell">
       <span class="font-medium sm:hidden">Resi</span>
       ${item.shipment_receipt}
     </td>
@@ -143,19 +153,18 @@ function loadDropdownCall() {
   
     <td class="px-6 py-4 text-sm text-gray-700 flex justify-between sm:table-cell">
       <span class="font-medium sm:hidden">Status</span>
-      ${item.status}     
+      <span class="${getStatusClass(item.status_id)}  px-2 py-1 rounded-full text-xs font-medium">
+        ${item.status}
+      </span>     
     </td>
           <div class="dropdown-menu hidden fixed w-48 bg-white border rounded shadow z-50 text-sm">
 
         <button onclick="event.stopPropagation(); showShipmentUpdateForm('${item.shipment_id}', '${item.no_inv}', '${item.no_package}', '${item.courier_id}', '${item.courier_note}');" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
-          🖨️ Input Resi
+          📝 Input Resi
         </button>
-
-        ${item.courier && item.shipment_receipt !== "" ? `
         <button onclick="event.stopPropagation(); printShippingLabel('${item.shipment_id}');" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
           🖨️ Print Shipping Label
         </button>
-           ` : ''}
       </div>
   </tr>`;
   };
@@ -211,6 +220,7 @@ function printShippingLabel(shipment_id) {
     title: 'Cetak Label Pengiriman',
     text: 'Pilih metode pencetakan label:',
     showCancelButton: true,
+    showConfirmButton: false,
     confirmButtonText: 'Download PDF',
     cancelButtonText: 'Print (Langsung)',
     reverseButtons: true

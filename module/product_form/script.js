@@ -13,7 +13,7 @@ if (window.detail_id) {
   document.getElementById('updateButton').classList.add('hidden');
   loadDropdown('formCategory', `${baseUrl}/list/product_category/${owner_id}`, 'category_id', 'category');
   loadDropdown('formUnit', `${baseUrl}/list/product_unit/${owner_id}`, 'unit_id', 'unit');
-  loadDropdown('formStatus', `${baseUrl}/list/product_status/${owner_id}`, 'status_id', 'status');
+  // loadDropdown('formStatus', `${baseUrl}/list/product_status/${owner_id}`, 'status_id', 'status');
   loadKategoriOptions();
 
 }
@@ -78,7 +78,7 @@ async function loadDetail(Id) {
 
   await loadDropdown('formCategory', `${baseUrl}/list/product_category/${owner_id}`, 'category_id', 'category');
   await loadDropdown('formUnit', `${baseUrl}/list/product_unit/${owner_id}`, 'unit_id', 'unit');
-  await loadDropdown('formStatus', `${baseUrl}/list/product_status/${owner_id}`, 'status_id', 'status');
+  // await loadDropdown('formStatus', `${baseUrl}/list/product_status/${owner_id}`, 'status_id', 'status');
 
 try {
   const res = await fetch(`${baseUrl}/detail/product/${Id}?_=${Date.now()}`, {
@@ -101,7 +101,7 @@ try {
     document.getElementById('formUnit').value = detail.unit_id || '';
     document.getElementById('formBerat').value = detail.weight?.toLocaleString('id-ID') || '';
     document.getElementById('formDescription').value = detail.description || '';
-    document.getElementById('formStatus').checked = detail.status_id === 1;
+    // document.getElementById('formStatus').checked = detail.status_id === 1;
 
     // Ambil business_category_id dari array business_categories
     const selectedBusinessCategories = (detail.business_categories || []).map(cat => cat.business_category_id);
@@ -211,7 +211,7 @@ function getDataPayload() {
     sale_price: getInt('formPrice'),
     wholesale_price: getInt('formWholesale'),
     weight: getInt('formBerat'),
-    status_id: 1,
+    // status_id: 1,
     business_category_ids: Array.from(document.querySelectorAll('#kategoriForm input[name="kategori"]:checked'))
       .map(input => parseInt(input.value))
 

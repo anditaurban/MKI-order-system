@@ -5,9 +5,23 @@
         <div class="flex-shrink-0">
           <img src="./assets/img/cropped-Logo-MKI.webp" alt="Logo" class="h-10 w-auto">
         </div>
+        
+    </div>
+    <div>
         <a id="devmode" class="text-green-400 bg-gray-800 p-2 hidden"></a>
     </div>
+
+
+
     <div class="flex items-center gap-4">
+            <div id="apiStatus" class="relative">
+        <button id="apiIndicatorToggle" class="relative text-gray-700 hover:bg-gray-200 dark:text-white rounded p-2">
+          <span id="apiIndicator">🔄</span>
+        </button>
+        <div id="apiIndicatorDropdown" class="hidden absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-md z-50">
+          <div class="p-4 text-sm text-gray-700 dark:text-white border-b border-gray-200 dark:border-gray-600"><span id="apiIndicatorText">Mengecek...</span></div>
+        </div>
+      </div>
       <!-- <button id="toggleTheme" class="hidden md:block text-gray-700 hover:bg-gray-200 dark:text-white rounded p-2">🌓</button> -->
       <div class="relative">
         <button id="notificationToggle" class="relative text-gray-700 hover:bg-gray-200 dark:text-white rounded p-2">
