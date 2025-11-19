@@ -1,4 +1,4 @@
-const isLocalhost = ['localhost', '127.0.0.1', 'mki.jagoinovasi.cloud', 'https://anditaurban.github.io/MKI-order-system/login'].includes(window.location.hostname);
+const isLocalhost = ['localhost', '127.0.0.1', 'mki.jagoinovasi.cloud', 'https://anditaurban.github.io/MKI-order-system/'].includes(window.location.hostname);
 const mode = isLocalhost ? 'development' : 'production';
 const baseUrl = mode === 'production'
   ? 'https://prod.masterkuliner.cloud'  //production
