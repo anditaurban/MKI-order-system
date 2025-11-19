@@ -54,7 +54,7 @@
 
       for (const id of shipmentIds) {
         try {
-          // 1. Ambil Data Shipment
+          // 1. FETCH SHIPMENT
           const resShipment = await fetch(`${baseUrl}/detail/sales_shipment/${id}`, {
             headers: { 'Authorization': `Bearer ${API_TOKEN}` }
           });
@@ -65,8 +65,8 @@
 
           let itemsData = [];
 
-          // 2. LOGIKA FETCH ULANG KE PACKAGE (JIKA ITEM DETAIL TIDAK ADA DI SHIPMENT)
-          if (!detailShipment.items && detailShipment.package_id) {
+          // 2. FETCH PACKAGE (Fallback ke detail items paket)
+          if (detailShipment.package_id) {
             try {
               const resPackage = await fetch(`${baseUrl}/detail/sales_package/${detailShipment.package_id}`, {
                 headers: { 'Authorization': `Bearer ${API_TOKEN}` }
@@ -74,15 +74,17 @@
               const dataPackage = await resPackage.json();
               itemsData = dataPackage.detail?.items || [];
             } catch (err) {
-              console.warn("Gagal ambil detail paket, fallback ke item_list string", err);
+              console.warn("Gagal ambil detail paket", err);
             }
           } else {
             itemsData = detailShipment.items || [];
           }
 
-          // 3. Grouping
+          // 3. Grouping Item
           const koliGroups = groupItemsByKoli(itemsData);
-          const koliNames = Object.keys(koliGroups).sort();
+          const koliNames = Object.keys(koliGroups).sort((a, b) => {
+            return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+          });
           const totalKoli = koliNames.length;
 
           if (totalKoli === 0) {
@@ -104,27 +106,26 @@
       }
 
       generateBarcodes();
-      // printLabel(); 
     }
 
-    // --- Helper: Grouping ---
+    // --- Helper: Grouping Item ---
     function groupItemsByKoli(items) {
       const groups = {};
       if (!Array.isArray(items) || items.length === 0) return groups;
 
-      const addItemToGroup = (groupName, itemName, qty) => {
-        let key = groupName && groupName.trim() !== "" ? groupName : "-";
+      const addItem = (groupName, itemName, qty) => {
+        let key = (groupName && groupName.trim() !== "") ? groupName.toLowerCase() : "-";
         if (!groups[key]) groups[key] = [];
         groups[key].push(`${itemName} (${qty})`);
       };
 
       items.forEach(item => {
-        if (Array.isArray(item.item_detail) && item.item_detail.length > 0) {
+        if (item.bundling === true && Array.isArray(item.item_detail) && item.item_detail.length > 0) {
           item.item_detail.forEach(sub => {
-            addItemToGroup(sub.package_group, sub.item_name, sub.qty);
+            addItem(sub.package_group, sub.item_name, sub.qty);
           });
         } else {
-          addItemToGroup(item.package_group, item.item_name, item.qty);
+          addItem(item.package_group, item.item_name, item.qty);
         }
       });
 
@@ -134,16 +135,11 @@
     // --- Helper: HTML Label ---
     function createLabelHTML(detail, koliName, currentPkg, totalPkg, itemsList) {
       const labelDiv = document.createElement('div');
-
-      // --- UPDATE DI SINI: Menambahkan 'mb-10' agar ada jarak antar label ---
       labelDiv.className = 'mx-auto border border-black overflow-hidden relative page-break text-[12px] pt-[6mm] px-4 mb-10';
-
       labelDiv.style.width = labelWidth + 'mm';
       labelDiv.style.height = labelHeight + 'mm';
 
-      const koliHeader = (koliName === 'Standard' || koliName === '-')
-        ? `PAKET (${currentPkg}/${totalPkg})`
-        : `${koliName.toUpperCase()} (${currentPkg}/${totalPkg})`;
+      const displayKoliName = koliName.toUpperCase();
 
       labelDiv.innerHTML = `
           <div class="relative h-15 w-full">
@@ -156,9 +152,6 @@
 
             <div class="absolute top-0 right-[5mm] flex flex-col items-end text-right">
               <img src="${detail.courier_logo}" alt="Logo Kurir" class="h-7 mb-1">
-              <div class="border border-black bg-black text-white px-2 py-0.5 text-[10px] font-bold rounded mt-1">
-                 ${koliHeader}
-              </div>
             </div>
           </div>
 
@@ -184,7 +177,7 @@
           </div>
 
           <div class="text-[12px] font-bold mb-2 border-b border-black pb-1">
-             📦 ${koliName.toUpperCase()}
+             📦 ${displayKoliName}
           </div>
 
           <div class="border border-black py-1 text-center text-[12px] mb-2 absolute bottom-2 w-[calc(100%-2rem)]">
@@ -197,9 +190,6 @@
     }
 
     function generateBarcodes() {
-      document.querySelectorAll('.barcode-shipment').forEach(svg => {
-        JsBarcode(svg, svg.dataset.value, { format: "CODE128", width: 1.5, height: 40, displayValue: false });
-      });
       document.querySelectorAll('.barcode-invoice').forEach(svg => {
         JsBarcode(svg, svg.dataset.value, { format: "CODE128", width: 1.5, height: 40, displayValue: false });
       });

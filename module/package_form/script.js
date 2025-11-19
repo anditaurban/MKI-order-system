@@ -25,8 +25,6 @@ async function loadDetailSales(Id) {
       document.getElementById("totalItem").innerText = `${
         detail.total_qty?.toLocaleString("id-ID") || 0
       } item`;
-
-      // TAMBAHAN: Load Total Package (Ringkasan)
       document.getElementById("totalPackage").innerText = `${
         detail.total_package || 0
       }`;
@@ -42,25 +40,40 @@ async function loadDetailSales(Id) {
         row.querySelector(".itemNama").value = item.product_id;
         row.querySelector(".itemCat").innerText = item.category;
 
-        // TAMBAHAN: Set value Pengepakan Main Item
-        row.querySelector(".itemPackage").value = item.package_group || "";
+        // Set value Pengepakan awal
+        const pkgInput = row.querySelector(".itemPackage");
+        pkgInput.value = item.package_group || "";
 
+        // --- PERUBAHAN DI SINI ---
         if (item.category === "Kemitraan") {
+          // 1. Disable search produk (karena bundling)
           row.querySelector(".searchProduk").disabled = true;
-          row.querySelector(".itemQty").value = 0;
-          row.querySelector(".itemQty").disabled = true;
-          row.querySelector(".itemBerat").innerText = "0";
-          row.querySelector(".itemBerat").disabled = true;
-          // Biasanya main item kemitraan tidak ada koli fisik (karena dipecah jadi sub item),
-          // tapi jika mau di-disable juga bisa ditambahkan disini:
-          // row.querySelector(".itemPackage").disabled = true;
+
+          // 2. Sembunyikan Input Qty
+          const qtyInput = row.querySelector(".itemQty");
+          qtyInput.value = ""; // Kosongkan value
+          qtyInput.classList.add("hidden"); // Sembunyikan element
+
+          // 3. Kosongkan Teks Berat
+          const beratTxt = row.querySelector(".itemBerat");
+          beratTxt.innerText = ""; // Kosongkan teks
+
+          // 4. Sembunyikan Input Pengepakan
+          pkgInput.value = ""; // Kosongkan value
+          pkgInput.classList.add("hidden"); // Sembunyikan element
         } else {
-          row.querySelector(".itemQty").value = item.qty;
-          row.querySelector(".itemQty").disabled = false;
-          row.querySelector(".itemBerat").innerText =
-            item.weight?.toLocaleString("id-ID") || "0";
-          row.querySelector(".itemBerat").disabled = false;
+          // Jika BUKAN Kemitraan, tampilkan normal
+          const qtyInput = row.querySelector(".itemQty");
+          qtyInput.value = item.qty;
+          qtyInput.disabled = false;
+          qtyInput.classList.remove("hidden");
+
+          const beratTxt = row.querySelector(".itemBerat");
+          beratTxt.innerText = item.weight?.toLocaleString("id-ID") || "0";
+
+          pkgInput.classList.remove("hidden");
         }
+        // -------------------------
 
         const select = row.querySelector(".itemNama");
         const match = Array.from(select.options).find(
@@ -80,7 +93,6 @@ async function loadDetailSales(Id) {
             subRow.querySelector(".itemBerat").innerText =
               sub.weight?.toLocaleString("id-ID") || 0;
 
-            // TAMBAHAN: Set value Pengepakan Sub Item
             subRow.querySelector(".itemPackage").value =
               sub.package_group || "";
 
