@@ -1,41 +1,45 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
-  <title>Label Pengiriman - MKI</title>
+  <title>Label Pengiriman Per Koli - MKI</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     @media print {
-    @page {
-      size: calc(var(--label-width, 150mm)) calc(var(--label-height, 100mm)) landscape;
-      margin: 0;
+      @page {
+        size: calc(var(--label-width, 150mm)) calc(var(--label-height, 100mm)) landscape;
+        margin: 0;
+      }
+
+      body {
+        margin: 0;
+      }
     }
-    body {
-      margin: 0;
-    }
-  }
+
     .page-break {
       page-break-after: always;
     }
   </style>
 </head>
+
 <body class="bg-white font-sans text-[12px] leading-tight">
 
-  <div id="combinedLabels" class="px-0 py-0">
-    <!-- Semua label akan dimuat di sini -->
+  <div id="combinedLabels" class="px-0 py-4">
   </div>
 
   <script>
+    // --- CONFIG ---
     const script = document.createElement('script');
     script.src = `./assets/js/api.js?v=${new Date().getTime()}`;
-    script.onload = () => loadAllLabels(); // Tunggu api.js selesai
+    script.onload = () => loadAllLabels();
     document.body.appendChild(script);
 
     const defaultWidth = '150';
-    const defaultHeight = '100';    
+    const defaultHeight = '100';
 
     const labelWidth = localStorage.getItem('label_width') || defaultWidth;
     const labelHeight = localStorage.getItem('label_height') || defaultHeight;
@@ -44,102 +48,165 @@
     const urlParams = new URLSearchParams(window.location.search);
     const shipmentIds = urlParams.get('ids')?.split(',') || [];
 
+    // --- MAIN FUNCTION ---
     async function loadAllLabels() {
+      container.innerHTML = '';
+
       for (const id of shipmentIds) {
         try {
-          const res = await fetch(`${baseUrl}/detail/sales_shipment/${id}`, {
+          // 1. Ambil Data Shipment
+          const resShipment = await fetch(`${baseUrl}/detail/sales_shipment/${id}`, {
             headers: { 'Authorization': `Bearer ${API_TOKEN}` }
           });
+          const dataShipment = await resShipment.json();
+          const detailShipment = dataShipment.detail;
 
-          const data = await res.json();
-          const detail = data.detail;
-          if (!detail) continue;
+          if (!detailShipment) continue;
 
-          const items = detail.item_list?.join(', ') || "Item belum tersedia";
+          let itemsData = [];
 
-          const labelDiv = document.createElement('div');
-          labelDiv.className = 'mx-auto border border-black overflow-hidden relative page-break text-[12px] pt-[6mm] px-4';
-          labelDiv.style.width = labelWidth + 'mm';
-          labelDiv.style.height = labelHeight + 'mm';
+          // 2. LOGIKA FETCH ULANG KE PACKAGE (JIKA ITEM DETAIL TIDAK ADA DI SHIPMENT)
+          if (!detailShipment.items && detailShipment.package_id) {
+            try {
+              const resPackage = await fetch(`${baseUrl}/detail/sales_package/${detailShipment.package_id}`, {
+                headers: { 'Authorization': `Bearer ${API_TOKEN}` }
+              });
+              const dataPackage = await resPackage.json();
+              itemsData = dataPackage.detail?.items || [];
+            } catch (err) {
+              console.warn("Gagal ambil detail paket, fallback ke item_list string", err);
+            }
+          } else {
+            itemsData = detailShipment.items || [];
+          }
 
-          labelDiv.innerHTML = `
-<div class="relative h-15 w-full">
-  <!-- Logo kiri -->
-  <img src="assets/img/cropped-Logo-MKI.webp" alt="Logo" class="absolute top-0 left-[5mm] h-7 mb-2">
+          // 3. Grouping
+          const koliGroups = groupItemsByKoli(itemsData);
+          const koliNames = Object.keys(koliGroups).sort();
+          const totalKoli = koliNames.length;
 
-              <div class= "text-center">
-              <p class="text-[12px] font-bold">FAKTUR ${detail.no_inv}</p>
-              <svg class="barcode-invoice w-full h-12" data-value="${detail.no_inv}"></svg>
-            </div>
+          if (totalKoli === 0) {
+            const defaultItems = detailShipment.item_list ? detailShipment.item_list.join(', ') : "Item data tidak tersedia";
+            createLabelHTML(detailShipment, "Standard", 1, 1, defaultItems);
+            continue;
+          }
 
-  <!-- Logo kanan + teks di bawahnya -->
-  <div class="absolute top-0 right-[5mm] flex flex-col items-center text-right">
-    <img src="${detail.courier_logo}" alt="Logo Kurir" class="h-7 mb-1">
-  </div>
-</div>
+          // 4. Generate Label Loop
+          koliNames.forEach((koliName, index) => {
+            const itemsInThisKoli = koliGroups[koliName].join(', ');
+            const packageNumber = index + 1;
+            createLabelHTML(detailShipment, koliName, packageNumber, totalKoli, itemsInThisKoli);
+          });
 
-            <div class="border-t border-black pt-1 flex gap-4 text-[12px] leading-tight mb-2">
-              <div class="w-1/2">
-                <strong>Pengirim:</strong><br>
-                ${detail.sender_name}<br>
-                ${detail.sender_address}<br>
-                <span class="font-semibold">${detail.sender_phone}</span>
-              </div>
-              <div class="w-1/2">
-                <strong>Penerima:</strong><br>
-                ${detail.nama}<br>
-                ${detail.shipment_address}<br>
-                ${detail.region_name}<br>
-                <span class="font-semibold">${detail.whatsapp}</span>
-              </div>
-            </div>
-
-            <div class="text-[12px] h-12 mb-2">
-              <strong>ISI PAKET:</strong><br>
-              ${items}
-            </div>
-
-                        <div class="border border-black py-1 text-center text-[12px] mb-2">
-              <a class="font-semibold">CATATAN PENGIRIMAN</a>
-              <br><a>${detail.courier_note}</a>
-            </div>
-
-
-          `;
-
-          container.appendChild(labelDiv);
         } catch (error) {
           console.error('Gagal memuat shipment ID:', id, error);
         }
       }
 
       generateBarcodes();
-      // printLabel();
+      // printLabel(); 
+    }
 
+    // --- Helper: Grouping ---
+    function groupItemsByKoli(items) {
+      const groups = {};
+      if (!Array.isArray(items) || items.length === 0) return groups;
+
+      const addItemToGroup = (groupName, itemName, qty) => {
+        let key = groupName && groupName.trim() !== "" ? groupName : "-";
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(`${itemName} (${qty})`);
+      };
+
+      items.forEach(item => {
+        if (Array.isArray(item.item_detail) && item.item_detail.length > 0) {
+          item.item_detail.forEach(sub => {
+            addItemToGroup(sub.package_group, sub.item_name, sub.qty);
+          });
+        } else {
+          addItemToGroup(item.package_group, item.item_name, item.qty);
+        }
+      });
+
+      return groups;
+    }
+
+    // --- Helper: HTML Label ---
+    function createLabelHTML(detail, koliName, currentPkg, totalPkg, itemsList) {
+      const labelDiv = document.createElement('div');
+
+      // --- UPDATE DI SINI: Menambahkan 'mb-10' agar ada jarak antar label ---
+      labelDiv.className = 'mx-auto border border-black overflow-hidden relative page-break text-[12px] pt-[6mm] px-4 mb-10';
+
+      labelDiv.style.width = labelWidth + 'mm';
+      labelDiv.style.height = labelHeight + 'mm';
+
+      const koliHeader = (koliName === 'Standard' || koliName === '-')
+        ? `PAKET (${currentPkg}/${totalPkg})`
+        : `${koliName.toUpperCase()} (${currentPkg}/${totalPkg})`;
+
+      labelDiv.innerHTML = `
+          <div class="relative h-15 w-full">
+            <img src="assets/img/cropped-Logo-MKI.webp" alt="Logo" class="absolute top-0 left-[5mm] h-7 mb-2">
+
+            <div class="text-center pl-10 pr-10">
+              <p class="text-[12px] font-bold">FAKTUR ${detail.no_inv}</p>
+              <svg class="barcode-invoice w-full h-12" data-value="${detail.no_inv}"></svg>
+            </div>
+
+            <div class="absolute top-0 right-[5mm] flex flex-col items-end text-right">
+              <img src="${detail.courier_logo}" alt="Logo Kurir" class="h-7 mb-1">
+              <div class="border border-black bg-black text-white px-2 py-0.5 text-[10px] font-bold rounded mt-1">
+                 ${koliHeader}
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t border-black pt-1 flex gap-4 text-[12px] leading-tight mb-2">
+            <div class="w-1/2">
+              <strong>Pengirim:</strong><br>
+              ${detail.sender_name}<br>
+              ${detail.sender_address}<br>
+              <span class="font-semibold">${detail.sender_phone}</span>
+            </div>
+            <div class="w-1/2">
+              <strong>Penerima:</strong><br>
+              ${detail.nama}<br>
+              ${detail.shipment_address}<br>
+              ${detail.region_name}<br>
+              <span class="font-semibold">${detail.whatsapp}</span>
+            </div>
+          </div>
+
+          <div class="text-[11px] h-auto min-h-[40px] mb-1 overflow-hidden border-t border-dashed border-gray-400 pt-1">
+            <strong>ISI PAKET:</strong><br>
+            ${itemsList}
+          </div>
+
+          <div class="text-[12px] font-bold mb-2 border-b border-black pb-1">
+             📦 ${koliName.toUpperCase()}
+          </div>
+
+          <div class="border border-black py-1 text-center text-[12px] mb-2 absolute bottom-2 w-[calc(100%-2rem)]">
+            <a class="font-semibold">CATATAN PENGIRIMAN</a>
+            <br><a>${detail.courier_note || '-'}</a>
+          </div>
+        `;
+
+      container.appendChild(labelDiv);
     }
 
     function generateBarcodes() {
       document.querySelectorAll('.barcode-shipment').forEach(svg => {
-        JsBarcode(svg, svg.dataset.value, {
-          format: "CODE128",
-          width: 1.5,
-          height: 40,
-          displayValue: false
-        });
+        JsBarcode(svg, svg.dataset.value, { format: "CODE128", width: 1.5, height: 40, displayValue: false });
       });
-
       document.querySelectorAll('.barcode-invoice').forEach(svg => {
-        JsBarcode(svg, svg.dataset.value, {
-          format: "CODE128",
-          width: 1.5,
-          height: 40,
-          displayValue: false
-        });
+        JsBarcode(svg, svg.dataset.value, { format: "CODE128", width: 1.5, height: 40, displayValue: false });
       });
     }
-  
-  function printLabel() {
-            setTimeout(() => {
+
+    function printLabel() {
+      setTimeout(() => {
         if (window !== window.parent) {
           html2pdf()
             .set({
@@ -155,14 +222,13 @@
             })
             .from(container)
             .save()
-            .then(() => {
-              window.parent.postMessage({ type: 'PDF_DONE' }, '*');
-            });
+            .then(() => { window.parent.postMessage({ type: 'PDF_DONE' }, '*'); });
         } else {
           window.print();
         }
       }, 500);
-  }
+    }
   </script>
 </body>
+
 </html>
