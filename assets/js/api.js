@@ -1,8 +1,14 @@
-const isLocalhost = ['localhost', '127.0.0.1', 'mki.jagoinovasi.cloud'].includes(window.location.hostname);
+const isLocalhost = [
+  'localhost',
+  '127.0.0.1',
+  'mki.jagoinovasi.cloud',
+  'anditaurban.github.io'
+].includes(window.location.hostname);
+
 const mode = isLocalhost ? 'development' : 'production';
 const baseUrl = mode === 'production'
   ? 'https://prod.masterkuliner.cloud'  //production
-  : 'https://devngomset.katib.cloud';   //development
+  : 'https://devngomset.katib.cloud';   //development
 const API_TOKEN = '3ed66de3108ce387e9d134c419c0fdd61687c3b06760419d32493b18366999d2';
 
 const API_KEY = 'yTigmA0W7a9e30666d9434a0JlGNkxwv';
