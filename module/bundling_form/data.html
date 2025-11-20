@@ -19,26 +19,19 @@
       </div>
 
       <div class="flex flex-wrap gap-2">
-        <button onclick="createData()" id="addButton"
-          class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded">Simpan</button>
-        <button onclick="updateData()" id="updateButton"
-          class="bg-yellow-600 hover:bg-yellow-700 text-white text-sm px-4 py-2 rounded">Update</button>
-        <button onclick="printData()" id="printButton"
-          class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded hidden">Export</button>
-        <button onclick="loadModuleContent('bundling')" class="bg-gray-300 text-sm px-4 py-2 rounded">⬅️
-          Kembali</button>
+        <button onclick="createData()" id="addButton" class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded">Simpan</button>
+        <button onclick="updateData()" id="updateButton" class="bg-yellow-600 hover:bg-yellow-700 text-white text-sm px-4 py-2 rounded">Update</button>
+        <button onclick="printData()" id="printButton" class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded hidden">Export</button>
+        <button onclick="loadModuleContent('bundling')" class="bg-gray-300 text-sm px-4 py-2 rounded">⬅️ Kembali</button>
       </div>
     </div>
 
     <!-- Tab Navigation -->
     <div class="flex gap-2 border-b border-gray-300">
-      <button
-        class="tab-link active-tab text-sm flex items-center gap-2 py-1 px-3 bg-blue-100 hover:bg-blue-200 rounded-t-md text-blue-600 font-semibold"
-        data-tab="produk" onclick="switchTab('produk')">
+      <button class="tab-link active-tab text-sm flex items-center gap-2 py-1 px-3 bg-blue-100 hover:bg-blue-200 rounded-t-md text-blue-600 font-semibold" data-tab="produk" onclick="switchTab('produk')">
         ⬇️ <span class="menu-text hidden md:inline">Data Produk</span>
       </button>
-      <button class="tab-link text-sm flex items-center gap-2 py-1 px-3 hover:bg-blue-200 rounded-t-md text-gray-600"
-        data-tab="detail" onclick="switchTab('detail')">
+      <button class="tab-link text-sm flex items-center gap-2 py-1 px-3 hover:bg-blue-200 rounded-t-md text-gray-600" data-tab="detail" onclick="switchTab('detail')">
         ⬆️ <span class="menu-text hidden md:inline">Detail Item</span>
       </button>
     </div>
@@ -106,8 +99,7 @@
                 <label class="w-40 font-medium">Harga Jual</label>
                 <input type="text" id="formPrice" class="flex-1 border rounded px-3 py-2" />
               </div>
-              <p id="warnPrice" class="text-red-500 text-sm mt-1 hidden">Harga jual harus lebih tinggi dari harga pokok.
-              </p>
+              <p id="warnPrice" class="text-red-500 text-sm mt-1 hidden">Harga jual harus lebih tinggi dari harga pokok.</p>
             </div>
           </div>
 
@@ -128,7 +120,6 @@
                     <th class="px-3 py-2 border text-left">Produk</th>
                     <th class="px-3 py-2 w-[15%] border text-right">Qty</th>
                     <th class="px-3 py-2 w-[15%] border text-right">Harga</th>
-                    <th class="px-3 py-2 w-[15%] border text-right">Berat</th>
                     <th class="px-3 py-2 w-[15%] border text-right">Subtotal</th>
                     <th class="px-3 py-2 w-[10%] border text-center">Aksi</th>
                   </tr>
@@ -136,8 +127,7 @@
                 <tbody id="tabelItem" class="bg-white"></tbody>
               </table>
             </div>
-            <button onclick="tambahItem()"
-              class="mt-2 px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">+ Tambah Item</button>
+            <button onclick="tambahItem()" class="mt-2 px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">+ Tambah Item</button>
           </div>
 
           <!-- Ringkasan -->

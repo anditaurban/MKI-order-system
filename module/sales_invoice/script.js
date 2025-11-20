@@ -255,12 +255,13 @@ async function submitInvoice() {
 
     const json = await res.json();
 
-    if (res.ok) {
-      Swal.fire('Sukses', '✅ Data penjualan berhasil disimpan.', 'success');
-      loadModuleContent('sales');
-    } else {
-      Swal.fire('Gagal', json.message || '❌ Gagal menyimpan data penjualan.', 'error');
-    }
+if (String(json.success) === "true") {
+  Swal.fire('Sukses', json.message || '✅ Data penjualan berhasil disimpan.', 'success');
+  loadModuleContent('sales');
+} else {
+  Swal.fire('Gagal', json.message || '❌ Gagal menyimpan data penjualan.', 'error');
+}
+
   } catch (error) {
     console.error(error);
     Swal.fire('Error', '❌ Terjadi kesalahan saat memproses.', 'error');
@@ -339,14 +340,22 @@ async function updateInvoice() {
     });
 
     const json = await res.json();
-console.log("OUTPUT = ", json);
+    console.log("OUTPUT = ", json);
 
-    if (res.ok) {
-      Swal.fire('Sukses', '✅ Data penjualan berhasil diperbarui.', 'success');
-      loadModuleContent('sales');
-    } else {
-      Swal.fire('Gagal', json.message || '❌ Gagal update data penjualan.', 'error');
-    }
+// if (String(json.success) === "true") {
+//   Swal.fire('Sukses', json.message || '✅ Data penjualan berhasil disimpan.', 'success');
+//   loadModuleContent('sales');
+// } else {
+//   Swal.fire('Gagal', json.message || '❌ Gagal menyimpan data penjualan.', 'error');
+// }
+
+if (String(json.data?.success) === "true") {
+  Swal.fire('Sukses', json.data?.message || '✅ Data penjualan berhasil disimpan.', 'success');
+  loadModuleContent('sales');
+} else {
+  Swal.fire('Gagal', json.data?.message || '❌ Gagal menyimpan data penjualan.', 'error');
+}
+
   } catch (error) {
     console.error(error);
     Swal.fire('Error', '❌ Terjadi kesalahan saat memproses.', 'error');
@@ -650,4 +659,6 @@ async function sendWhatsAppInvoice() {
     alert("Gagal mengirim pesan WhatsApp.");
   }
 }
+
+
 

@@ -121,6 +121,7 @@ function loadDropdownCall() {
   window.rowTemplate = function (item, index, perPage = 10) {
     const { currentPage } = state[currentDataType];
     const globalIndex = (currentPage - 1) * perPage + index + 1;
+    // console.log(item.status_id);
   
     return `
   <tr class="flex flex-col sm:table-row border rounded sm:rounded-none mb-4 sm:mb-0 shadow-sm sm:shadow-none transition hover:bg-gray-50">
@@ -183,11 +184,11 @@ function loadDropdownCall() {
       </button>
     ` : ''}
 
-    ${item.status_id === 2 ? `
-      <button onclick="event.stopPropagation(); deleteSales(${item.pesanan_id})" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
-        🗑 Delete Order
-      </button>
-    ` : ''}
+${(item.status_id === 2 || user.role === 'superadmin') ? `
+  <button onclick="event.stopPropagation(); deleteSales(${item.sales_id})" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
+    🗑 Delete Order
+  </button>
+` : ''}
 
       </div>
     </td>
@@ -540,4 +541,6 @@ async function deleteSales(sales_id) {
     });
   }
 }
+
+
 
