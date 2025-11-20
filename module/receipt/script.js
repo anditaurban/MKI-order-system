@@ -366,6 +366,67 @@ async function confirmPayment(receipt_id, status_value, bank_id, amount, sales_i
   }
 }
 
+async function loadBankDropdown() {
+  try {
+    const res = await fetch(`${baseUrl}/list/payment_method/${owner_id}`, {
+      headers: {
+        'Authorization': `Bearer ${API_TOKEN}`
+      }
+    });
+    const data = await res.json();
+
+    const menu = document.getElementById('dropdownBankMenu');
+    menu.innerHTML = ''; // clear isi lama
+
+    if (data.listData && data.listData.length > 0) {
+      data.listData.forEach(bank => {
+        const btn = document.createElement('button');
+        btn.className = "flex flex-col text-left w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700";
+        btn.innerHTML = `
+          <span class="font-medium">${bank.account} - ${bank.tag}</span>
+          <span class="text-xs text-gray-500 dark:text-gray-400">${bank.owner_account} (${bank.number_account})</span>
+        `;
+        btn.onclick = () => selectBank(bank);
+        menu.appendChild(btn);
+      });
+
+      // separator + tombol reset
+      const divider = document.createElement('div');
+      divider.className = "border-t border-gray-200 dark:border-gray-700 my-1";
+      menu.appendChild(divider);
+
+      const allBtn = document.createElement('button');
+      allBtn.className = "flex items-center justify-between w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700";
+      allBtn.innerHTML = `<span>Semua Bank</span>`;
+      allBtn.onclick = () => selectBank(null);
+      menu.appendChild(allBtn);
+    } else {
+      menu.innerHTML = `<div class="px-4 py-2 text-sm text-gray-500">Tidak ada data bank</div>`;
+    }
+  } catch (err) {
+    console.error('Gagal load bank:', err);
+  }
+}
+
+function selectBank(bank) {
+  const label = document.getElementById('dropdownBankLabel');
+  if (bank) {
+    label.textContent = `${bank.account} - ${bank.tag}`;
+    filterData(`bank=${bank.account_id}`);
+  } else {
+    label.textContent = 'Semua Bank';
+    filterData('');
+  }
+  toggleBankDropdown(); // tutup dropdown setelah pilih
+}
+
+function toggleBankDropdown() {
+  document.getElementById('dropdownBankMenu').classList.toggle('hidden');
+}
+
+// load pertama kali
+loadBankDropdown();
+
 
 
 
