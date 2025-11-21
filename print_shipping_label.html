@@ -23,13 +23,17 @@
 
     .ellipsis-3 {
       display: -webkit-box;
+      display: box;               /* fallback */
+      
       -webkit-line-clamp: 3;
-      /* Maksimal 3 baris */
+      line-clamp: 3;              /* standard property */
+
       -webkit-box-orient: vertical;
+      box-orient: vertical;       /* fallback */
+
       overflow: hidden;
       text-overflow: ellipsis;
     }
-
 
     .page-break {
       page-break-after: always;
