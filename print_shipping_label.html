@@ -20,6 +20,16 @@
       }
     }
 
+    .ellipsis-3 {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      /* Maksimal 3 baris */
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+
     .page-break {
       page-break-after: always;
     }
@@ -171,10 +181,11 @@
             </div>
           </div>
 
-          <div class="text-[11px] h-auto min-h-[40px] mb-1 overflow-hidden border-t border-dashed border-gray-400 pt-1">
-            <strong>ISI PAKET:</strong><br>
-            ${itemsList}
-          </div>
+          <div class="text-[11px] h-auto min-h-[40px] mb-1 overflow-hidden border-t border-dashed border-gray-400 pt-1 ellipsis-3">
+    <strong>ISI PAKET:</strong><br>
+    ${itemsList}
+</div>
+
 
           <div class="text-[12px] font-bold mb-2 border-b border-black pb-1">
              📦 ${displayKoliName}
