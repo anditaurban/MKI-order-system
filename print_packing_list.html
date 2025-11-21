@@ -75,8 +75,12 @@
       <div class="col-span-2 text-sm">: ${detail.date}</div>
     </div>
     <div class="grid grid-cols-3">
-      <div class="font-medium text-sm">Di Pack Oleh</div>
-      <div class="col-span-2 text-sm">: ${detail.pic_name}</div>
+      <div class="font-medium text-sm">Pelanggan</div>
+      <div class="col-span-2 text-sm">: ${detail.nama}</div>
+    </div>
+    <div class="grid grid-cols-3">
+      <div class="font-medium text-sm">Kemitraan</div>
+      <div class="col-span-2 text-sm">: ${detail.business_category}</div>
     </div>
   </div>
 
@@ -93,6 +97,10 @@
     <div class="grid grid-cols-3">
       <div class="font-medium text-sm">Total Berat</div>
       <div class="col-span-2 text-sm">: ${detail.total_weight.toLocaleString('id-ID')} gram</div>
+    </div>
+    <div class="grid grid-cols-3">
+      <div class="font-medium text-sm">Di Pack Oleh</div>
+      <div class="col-span-2 text-sm">: ${detail.pic_name}</div>
     </div>
   </div>
 </div>
