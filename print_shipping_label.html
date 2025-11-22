@@ -22,13 +22,17 @@
 
     .ellipsis-3 {
       display: -webkit-box;
+      display: box;               /* fallback */
+      
       -webkit-line-clamp: 3;
-      /* Maksimal 3 baris */
+      line-clamp: 3;              /* standard property */
+
       -webkit-box-orient: vertical;
+      box-orient: vertical;       /* fallback */
+
       overflow: hidden;
       text-overflow: ellipsis;
     }
-
 
     .page-break {
       page-break-after: always;
@@ -188,7 +192,7 @@
 
 
           <div class="text-[12px] font-bold mb-2 border-b border-black pb-1">
-             📦 ${displayKoliName}
+             ðŸ“¦ ${displayKoliName}
           </div>
 
           <div class="border border-black py-1 text-center text-[12px] mb-2 absolute bottom-2 w-[calc(100%-2rem)]">
