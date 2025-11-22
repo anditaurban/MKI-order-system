@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8" />
   <title>Packing List</title>
@@ -8,7 +9,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
-    html, body {
+    html,
+    body {
       margin: 0;
       padding: 0;
       height: auto;
@@ -28,6 +30,7 @@
     }
   </style>
 </head>
+
 <body class="bg-white text-black font-sans text-sm">
   <div id="combinedContainer"></div>
 
@@ -39,7 +42,6 @@
     const urlParams = new URLSearchParams(window.location.search);
     const ids = (urlParams.get('ids') || '').split(',');
     const isDownload = urlParams.get('mode') === 'download';
-    const today = new Date().toISOString().split('T')[0];
     const container = document.getElementById('combinedContainer');
 
     async function loadAllPacking() {
@@ -62,9 +64,7 @@
           <h2 class="text-center text-xl font-bold">PACKING LIST</h2>
           <h4 class="text-center text-base font-medium mt-1">${detail.no_package || '-'}</h4>
 
-<!-- Informasi Header -->
 <div class="mt-6 flex flex-col md:flex-row justify-between gap-6 w-full">
-  <!-- Kolom Kiri -->
   <div class="grid gap-2 w-full md:max-w-md">
     <div class="grid grid-cols-3">
       <div class="font-medium text-sm">No Invoice</div>
@@ -84,7 +84,6 @@
     </div>
   </div>
 
-  <!-- Kolom Kanan -->
   <div class="grid gap-2 w-full md:max-w-xs">
     <div class="grid grid-cols-3">
       <div class="font-medium text-sm">Total Item</div>
@@ -105,48 +104,43 @@
   </div>
 </div>
 
-
-
-
-
-
-
-          <table class="w-full border border-black mt-6 text-sm">
+          <table class="w-full border border-black mt-6 text-sm table-fixed">
             <thead>
               <tr class="bg-gray-100">
-                <th class="border border-black px-2 py-1 w-[25%] text-left">KODE</th>
-                <th class="border border-black px-2 py-1  text-left">ITEM</th>
-                <th class="border border-black px-2 py-1 w-[15%] text-left">QTY</th>
-                <th class="border border-black px-2 py-1 w-[15%] text-left">UNIT</th>
+                <th class="border border-black px-2 py-1 w-[20%] text-left">KODE</th>
+                <th class="border border-black px-2 py-1 w-[35%] text-left">ITEM</th>
+                <th class="border border-black px-2 py-1 w-[10%] text-center">QTY</th>
+                <th class="border border-black px-2 py-1 w-[15%] text-center">UNIT</th>
+                <th class="border border-black px-2 py-1 w-[20%] text-center">PENGEPAKAN</th>
               </tr>
             </thead>
             <tbody>
   ${items.map(item => `
     <tr>
-    <td class="border border-black px-2 py-1 align-top">${item.productcode}</td>
-      <td class="border border-black px-2 py-1">
-        <div>${item.item_name}</div>
+      <td class="border border-black px-2 py-1 align-top">${item.productcode}</td>
+      <td class="border border-black px-2 py-1 align-top">
+        <div class="font-medium">${item.item_name}</div>
       </td>
-      <td class="border border-black px-2 py-1 align-top">${item.qty}</td>
-      <td class="border border-black px-2 py-1 align-top">${item.unit}</td>
+      <td class="border border-black px-2 py-1 align-top text-center">${item.qty}</td>
+      <td class="border border-black px-2 py-1 align-top text-center">${item.unit}</td>
+      <td class="border border-black px-2 py-1 align-top text-center font-bold">${item.package_group || '-'}</td>
     </tr>
     ${item.item_detail && item.item_detail.length > 0 ? item.item_detail.map(detail => `
       <tr class="text-xs text-gray-700">
-        <td class="border border-black px-2 py-1 pl-6">${detail.productcode}</td>
-        <td class="border border-black px-2 py-1">
+        <td class="border border-black px-2 py-1 pl-6 align-top">${detail.productcode}</td>
+        <td class="border border-black px-2 py-1 align-top">
           ${detail.item_name} <span class="text-gray-500 italic">(${detail.weight} gr)</span>
         </td>
-        <td class="border border-black px-2 py-1 pl-6">${detail.qty}</td>
-        <td class="border border-black px-2 py-1 pl-6">${detail.unit}</td>
+        <td class="border border-black px-2 py-1 align-top text-center">${detail.qty}</td>
+        <td class="border border-black px-2 py-1 align-top text-center">${detail.unit}</td>
+        <td class="border border-black px-2 py-1 align-top text-center font-medium">${detail.package_group || '-'}</td>
       </tr>
     `).join('') : ''}
   `).join('')}
 </tbody>
-
           </table>
 
-          <!-- Catatan -->
-<div class="mt-4 border p-3 rounded w-full">
+          <div class="mt-4 border p-3 rounded w-full">
   <div class="font-semibold text-sm mb-1">Catatan</div>
   <div class="font-medium text-sm text-gray-700">${detail.notes || '-'}</div>
 </div>
@@ -178,4 +172,5 @@
     window.onload = loadAllPacking;
   </script>
 </body>
+
 </html>
